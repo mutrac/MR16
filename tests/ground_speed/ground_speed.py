@@ -1,11 +1,11 @@
-
-import cv2
+import cv2, cv
 import numpy
 import math
 import time
+import sys
 
 ## Constants
-VIDEO_CAPTURE = 'grass_2kmh_25fps.avi'
+VIDEO_CAPTURE = sys.argv[1]
 VIDEO_WIDTH_CM = 19 # centimeters
 VIDEO_HEIGHT_CM = 10
 VIDEO_WIDTH_PX = 320 # centimeters
@@ -27,22 +27,22 @@ try:
     video.set(cv.CV_CAP_PROP_FRAME_WIDTH, VIDEO_WIDTH_PX)
     video.set(cv.CV_CAP_PROP_FRAME_HEIGHT, VIDEO_HEIGHT_PX)
     print('\tOKAY')
-except Exception:
-    print('\tERROR')
+except Exception as err:
+    print('\tERROR: %s' % str(err))
     
 try:
     print('Initializing SURF detector...')
     surf = cv2.SURF(SURF_HESSIAN_FILTER)
     print('\tOKAY')
-except Exception:
-    print('\tERROR')
+except Exception as err:
+    print('\tERROR: %s' % str(err))
 
 try:
     print('Initializing Brute-Force Matcher...')
     brute = cv2.BFMatcher()
     print('\tOKAY')
-except Exception:
-    print('\tERROR')
+except Exception as err:
+    print('\tERROR: %s' % str(err))
 
 try:
     print('Initializing FLANN Matcher...')
@@ -51,16 +51,15 @@ try:
 except Exception:
     print('\tERROR')
     
-
-## Hypothenuse
+## Convert to Speed
 def speed(x1, y1, x2, y2):
-    distance_px = math.sqrt( (x2-x1)**2 + (y2 - y1)**2)
-    distance_cm = VIDEO_PX2CM *  distance_px
-    speed_cms = distance_cm * FPS
-    speed_kmh = 0.036 * speed_cms
+    distance_px = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    distance_cm = VIDEO_PX2CM *  distance_px # assume constant distance
+    speed_kmh = 0.036 * distance_cm * FPS # assue constant fps
     return speed_kmh
     
 # Loop
+print('Starting video...')
 frame = 0
 moving_average = [0] * MOVING_AVERAGES
 (s1, bgr1) = video.read()
@@ -104,12 +103,13 @@ while True:
                 y2 = int(point2.pt[1])
                 cv2.line(output, (x1, y1), (x2 + VIDEO_WIDTH_PX, y2), (100,0,255), 1)
                 distances.append(speed(x1, y1, x2, y2))
-            print('Output image ...')
+            print('Output image...')
             average = numpy.mean(distances)
+            print('Estimated Ground Speed: %f' % average)
             if not numpy.isnan(average):
                 moving_average.pop(0)
                 moving_average.append(average)
-            print('Ground Speed: %f' % numpy.mean(moving_average))
+            print('Moving Average Ground Speed: %f' % numpy.mean(moving_average))
             cv2.imshow('', output)
             if cv2.waitKey(1) == 27:
                 pass
