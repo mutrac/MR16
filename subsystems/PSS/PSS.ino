@@ -4,29 +4,41 @@
 */
 
 /* --- Libraries --- */
+#include <PID_v1.h>
 
 /* --- Global Constants --- */
 const int BAUD = 57600;
 const int BUFFER_SIZE = 256;
-const int STEERING_POSITION_PIN = A0;
+const int WHEEL_POSITION_PIN = A0;
 const int ACTUATOR_POSITION_PIN = A1;
 
 /* --- Global Variables --- */
-int steering_position = 0;
-int actuator_position = 0;
-char output_buffer[BUFFER_SIZE];
+int Wheel_position = 0;
+int Actuator_position = 0;
+char Output_buffer[BUFFER_SIZE];
+
+/* --- Functions --- */
+int check actuator_position(void) {
+  int val = analogRead(ACTUATOR_POSITION_PIN);
+  return val;
+}
+
+int check wheel_position(void) {
+  int val = analogRead(WHEEL_POSITION_PIN);
+  return val;
+}
 
 /* --- Setup --- */
-void setup() {
+void setup(void) {
   Serial.begin(BAUD);
-  pinMode(STEERING_POSITION_PIN, INPUT);
+  pinMode(WHEEL_POSITION_PIN, INPUT);
   pinMode(ACTUATOR_POSITION_PIN, INPUT);
 }
 
 /* --- Loop --- */
-void loop() {
-  steering_position = analogRead(STEERING_POSITION_PIN);
-  actuator_position = analogRead(ACTUATOR_POSITION_PIN);
-  sprintf(output_buffer, "steering_position:%d, actuator_position:%d", steering_position, actuator_position);
-  Serial.println(output_buffer);
+void loop(void) {
+  Wheel_position = analogRead(WHEEL_POSITION_PIN);
+  Actuator_position = analogRead(ACTUATOR_POSITION_PIN);
+  sprintf(Output_buffer, "{'wheel_pos':%d,'actuator_pos':%d}", Wheel_position, Actuator_position);
+  Serial.println(Output_buffer);
 }
