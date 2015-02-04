@@ -1,5 +1,5 @@
 /*
-  Vehicle Safety Subsystem (ESS)
+  Vehicle Safety Subsystem (VSS)
   McGill ASABE Tractor Team
 */
 
@@ -9,8 +9,10 @@
 #include "OneWire.h"
 
 /* --- Global Constants --- */
+const char ID[] = "VSS";
 const int BAUD = 57600;
-const int BUFFER_SIZE = 256;
+const int OUTPUT_SIZE = 256;
+const int DATA_SIZE = 128;
 const int SEAT_KILLSWITCH_PIN = 2;
 const int HITCH_KILLSWITCH_PIN = 3;
 const int BUTTON_KILLSWITCH_PIN = 4;
@@ -34,7 +36,7 @@ int REG_RELAY = 0;
 int START_RELAY = 0;
 int LEFT_BRAKE = 0;
 int RIGHT_BRAKE = 0;
-int RFID_AUTH
+int RFID_AUTH = 0;
 char DATA_BUFFER[DATA_SIZE];
 char OUTPUT_BUFFER[OUTPUT_SIZE];
 
@@ -62,7 +64,7 @@ void loop() {
   RIGHT_BRAKE = analogRead(RIGHT_BRAKE_PIN);
   LEFT_BRAKE = analogRead(LEFT_BRAKE_PIN);
   sprintf(DATA_BUFFER, "gnd_relay:%d, reg_relay:%d, starter_relay:%d, brake_lock:%d, cvt_lock:%d, seat_kill:%d, hitch_kill:%d, ignition:%d", GND_RELAY, REG_RELAY, START_RELAY, BRAKE_LOCK, CVT_LOCK, SEAT_KILL, HITCH_KILL, IGNITION);
-  sprintf(OUTPUT_BUFFER, "'{data':%s,'chksum':%d}", DATA_BUFFER, checksum());
+  sprintf(OUTPUT_BUFFER, "{'id':%s,'data':%s,'chksum':%d}", ID, DATA_BUFFER, checksum());
   Serial.println(OUTPUT_BUFFER);
 }
 

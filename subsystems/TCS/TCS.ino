@@ -8,7 +8,7 @@
 #include "AFMotor.h"
 
 /* --- Global Constants --- */
-const char ID[] = "DTS";
+const char ID[] = "TCS";
 const int BAUD = 57600;
 const int DATA_SIZE = 128;
 const int OUTPUT_SIZE = 256;
@@ -45,7 +45,7 @@ void loop() {
   setpoint = driveshaft_pulses / sparkplug_pulses;
   cvt_pid.Compute();
   sprintf(DATA_BUFFER, "[]");
-  sprintf(OUTPUT_BUFFER, "'{data':%s,'chksum':%d}", DATA_BUFFER, checksum());
+  sprintf(OUTPUT_BUFFER, "{'id':%s,data':%s,'chksum':%d}", ID, DATA_BUFFER, checksum());
   Serial.println(OUTPUT_BUFFER);
 }
 

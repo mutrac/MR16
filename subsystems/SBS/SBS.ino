@@ -7,6 +7,7 @@
 #include "PID_v1.h"
 
 /* --- Global Constants --- */
+const char[] ID = "SBS";
 const int BAUD = 57600;
 const int DATA_SIZE = 128;
 const int OUTPUT_SIZE = 256;
@@ -39,7 +40,7 @@ void loop() {
   CART_POS = analogRead(CART_POSITION_PIN);
   SUSP_POS = analogRead(SUSPENSION_POSITION_PIN);
   sprintf(DATA_BUFFER, "[str_pos:%d,act_posi:%d,cart_pos:%d,susp_pos:%d]", STR_POS, ACT_POS, CART_POS, SUSP_POS);
-  sprintf(OUTPUT_BUFFER, "'{data':%s,'chksum':%d}", DATA_BUFFER, checksum());
+  sprintf(OUTPUT_BUFFER, "{'id':%s,'data':%s,'chksum':%d}", ID, DATA_BUFFER, checksum());
   Serial.println(OUTPUT_BUFFER);
 }
 
