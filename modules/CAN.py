@@ -15,36 +15,23 @@ def pretty_print(task, msg):
     date = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S.%f")
     print("%s %s %s" % (date, task, msg))
 
-
+def save_config(config, filename):
+    with open(filename, 'w') as jsonfile:
+        jsonfile.write(json.dumps(config, indent=True))
+        
 # Classes (Note: class names should be capitalized)
 
 """
 This is the MIMO class (Multiple-Input, Multiple-Output) which supports
 several controllers and custom network topologies. 
 """
-class CAN:
+class MIMO:
     
     def __init__(self, config):
-    
-        ## Create the controller registry look-up dictionary
+        pretty_print('CAN', 'initializing')
         self.controllers = {}
-        for (dev_path, baud) in config:
-            self.add_controller(dev_path, baud)
-                
-    """
-    Parse message from controller
-    """           
-    def parse_msg(raw):
-        msg = ast.literal_eval(raw)
-        return msg
-    
-    """
-    Get Controller info
-    """           
-    def controller_info(string):
-        msg = ast.literal_eval(string)
-        msg['id']
-        return msg
+        for name in config: 
+            self.add_controller(config[name]['path'], config[name]['baud'])
         
     """
     Add new controller to the network
@@ -57,6 +44,7 @@ class CAN:
             data = ast.literal_eval(string)
             dev_id = data['id']
             self.controllers[dev_id] = port  #! make into own class?
+            pretty_print('CAN', dev_id)
         except Exception as error:
             pretty_print('ERROR', str(error))
         
@@ -81,5 +69,10 @@ class CAN:
         pretty_print('SYSTEM', 'Closing')
 
 if __name__ == '__main__':
-    config = [('/dev/ttyACM0', 9600)]
-    can = CAN(config)
+    config = {
+        '1' : {
+            'path' : '/dev/ttyACM0',
+            'baud' : 9600
+        }
+    }
+    can = MIMO(config)

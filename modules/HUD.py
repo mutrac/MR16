@@ -17,17 +17,21 @@ def pretty_print(task, msg):
     date = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S.%f")
     print("%s %s %s" % (date, task, msg))
     
+def save_config(config, filename):
+    with open(filename, 'w') as jsonfile:
+        jsonfile.write(json.dumps(config, indent=True))
+    
 # Classes (Note: class names should be capitalized)
-class HUD: 
+class SafeMode: 
 
-    def __init__(self, master, config):
+    def __init__(self, config):
         pretty_print('INIT', 'Setting Layout')
-        self.master = master
+        self.master = tk.Tk()
         self.master.config(background = config['bg'])
         self._geom = config['geometry']
-        master.geometry("{0}x{1}+0+0".format(
-            master.winfo_screenwidth()-config['pad'],
-            master.winfo_screenheight()-config['pad'])
+        self.master.geometry("{0}x{1}+0+0".format(
+            self.master.winfo_screenwidth()-config['pad'],
+            self.master.winfo_screenheight()-config['pad'])
         )
         self.master.overrideredirect(config['fullscreen']) # make fullscreen
         self.master.focus_set()
@@ -83,13 +87,5 @@ if __name__ == '__main__':
             }
         }
     }
-    with open('layout.json', 'w') as jsonfile:
-        jsonfile.write(json.dumps(config, indent=True))
-    window = tk.Tk()
-    display = HUD(window, config)
-    while True:
-        new_labels = {
-            'test' : time.time(),
-            'test2' : time.time() + 3
-        }
-        display.update_labels(new_labels)
+    save_config(config, 'test')
+    display = SafeMode(config)

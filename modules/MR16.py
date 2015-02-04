@@ -5,10 +5,9 @@ MuTrac Release Candidate 2016
 """
 
 # Dependencies
-import groundspeed
-import hud
-import can
-import sys, os
+import HUD
+import CAN
+import sys, os, json, time
 
 # Functions
 def format_time():
@@ -20,28 +19,26 @@ def parse_args():
 
 # Class
 class MR16:
-    def __init__(self):
-        self.hud = hud.SafeMode() 
-        self.can = can.MIMO()
-        self.groundspeed = groundspeed.BruteMatch()
+
+    def __init__(self, hud_config, can_config):
+        self.display = HUD.SafeMode(hud_config) 
+        self.network = CAN.MIMO(can_config)
     
     def run(self):
-        kph = self.groundspeed.get_kph()
-        snapshot = self.can.get_snapshot()
-        self.hud.update_display(snapshot)
+        while True:
+            new_labels = {
+                'test' : time.time(),
+            }
+            self.display.update_labels(new_labels)
         
     def shutdown(self):
-        self.hud.close()
-        self.can.close()
-        self.groundspeed.close()
+        pass
         
 # Run-Time
 if __name__ == '__main__':
-    root = MR16()
-    try:
-        root = MR16()
-        A = True
-        while A:
-            root.run()
-    finally:
-        root.shutdown()
+    with open('hud_config.json', 'r') as jsonfile:
+        hud_config = json.loads(jsonfile.read())
+    with open('can_config.json', 'r') as jsonfile:
+        can_config = json.loads(jsonfile.read())
+    root = MR16(hud_config, can_config)
+    root.run()
