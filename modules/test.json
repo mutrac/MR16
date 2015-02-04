@@ -1,0 +1,18 @@
+{
+ "fullscreen": true, 
+ "bg": "#FFFFFF", 
+ "geometry": "640x480+0+0", 
+ "labels": {
+  "test": {
+   "font_size": 24, 
+   "initial_value": "", 
+   "format": "%s sec", 
+   "bg_color": "#FFFFFF", 
+   "y": 20, 
+   "x": 0, 
+   "font_type": "Helvetica"
+  }
+ }, 
+ "state": "normal", 
+ "pad": 3
+}

@@ -71,6 +71,7 @@ gray2 = cv2.cvtColor(bgr2, cv2.COLOR_BGR2GRAY)
 while True:
     a = time.time()
     bgr1 = bgr2
+    time.sleep(1)
     (s, bgr2) = video.read()
     if s:
         try:
