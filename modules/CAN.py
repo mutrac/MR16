@@ -6,13 +6,14 @@ This class is responsible for managing the controller network
 # Dependencies
 import pymongo
 import serial
-import thread
 import ast
 from datetime import datetime
+import json
+import time
 
 # Useful Functions 
 def pretty_print(task, msg):
-    date = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S.%f")
+    date = datetime.strftime(datetime.now(), '%d/%b/%Y:%H:%M:%S')
     print("%s %s %s" % (date, task, msg))
 
 def save_config(config, filename):
@@ -27,11 +28,19 @@ several controllers and custom network topologies.
 """
 class MIMO:
     
+    """
+    Initialize
+    """
     def __init__(self, config):
-        pretty_print('CAN', 'initializing')
+        self.config = config
         self.controllers = {}
         for name in config: 
-            self.add_controller(config[name]['path'], config[name]['baud'])
+            dev = self.config[name]
+            try:
+                self.add_controller(dev['path'], dev['baud'])
+            except Exception as error:
+                pretty_print('ERROR', str(error))
+        pretty_print('CAN', self.controllers.keys())
         
     """
     Add new controller to the network
@@ -47,6 +56,7 @@ class MIMO:
             pretty_print('CAN', dev_id)
         except Exception as error:
             pretty_print('ERROR', str(error))
+            raise error
         
     """
     Remove controller from the network
@@ -58,21 +68,45 @@ class MIMO:
             del self.controllers[dev_id]
         except Exception as error:
             pretty_print('ERROR', str(error))
+            raise error
+    
+    """
+    Generate random event
+    """
+    def generate_event(self, task, msg):
+        event = {
+            'type' : task,
+            'msg' : msg,
+            'time': datetime.strftime(datetime.now(), "%Y-%m-%d %H-%M-%S.%f"),
+            'w_eng' : time.time()
+        }
+        return event
         
     """
-    Return a list of controllers and their status
-    """
-    def list_controllers(self):
-        return self.controllers.values()
-    
-    def close(self):
-        pretty_print('SYSTEM', 'Closing')
+    Listen All
+    TODO: refactor to make this an async monitor of each controller
+    """   
+    def listen_all(self):
+        if self.controllers:
+            for c in self.controllers:
+                try:
+                    pretty_print('CAN', 'listening on %s' % c)
+                    e = c.read(timeout=1)
+                    return e
+                except Exception as error:
+                    pretty_print("ERROR", str(error))
+        else:
+            pretty_print("ERROR", 'No controllers in network!')
+            return self.generate_event("ERROR", 'No controllers in network!')  
 
 if __name__ == '__main__':
-    config = {
-        '1' : {
-            'path' : '/dev/ttyACM0',
-            'baud' : 9600
-        }
-    }
+    with open('can_config.json', 'r') as jsonfile:
+        config = json.loads(jsonfile.read())
     can = MIMO(config)
+    while True:
+        try:
+            can.listen_all()
+        except KeyboardInterrupt:
+            break
+        except Exception as error:
+            pretty_print('ERROR', str(error))

@@ -1,14 +1,50 @@
 {
- "fullscreen": true, 
+ "fullscreen": false, 
  "bg": "#FFFFFF", 
  "geometry": "640x480+0+0", 
  "labels": {
-  "test": {
+  "time": {
    "font_size": 24, 
    "initial_value": "", 
    "format": "%s sec", 
    "bg_color": "#FFFFFF", 
    "y": 20, 
+   "x": 0, 
+   "font_type": "Helvetica"
+  },
+  "mcu": {
+   "font_size": 24, 
+   "initial_value": "", 
+   "format": "%s", 
+   "bg_color": "#FFFFFF", 
+   "y": 40, 
+   "x": 0, 
+   "font_type": "Helvetica"
+  },
+  "w_eng": {
+   "font_size": 24, 
+   "initial_value": "", 
+   "format": "%s rpm", 
+   "bg_color": "#FFFFFF", 
+   "y": 80, 
+   "x": 0, 
+   "font_type": "Helvetica"
+  },
+  "type": {
+   "font_size": 24, 
+   "initial_value": "", 
+   "format": "%s", 
+   "bg_color": "#FFFFFF", 
+   "y": 120, 
+   "x": 0, 
+   "font_type": "Helvetica"
+  },
+  "msg": {
+   "font_size": 24, 
+   "initial_value": "", 
+   "format": "%s", 
+   "bg_color": "#FFFFFF", 
+   "y": 160, 
    "x": 0, 
    "font_type": "Helvetica"
   }

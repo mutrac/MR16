@@ -11,10 +11,11 @@ import Tkinter as tk
 from datetime import datetime 
 import time
 import json
+import random
 
 # Useful Functions 
 def pretty_print(task, msg):
-    date = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S.%f")
+    date = datetime.strftime(datetime.now(), '%d/%b/%Y:%H:%M:%S')
     print("%s %s %s" % (date, task, msg))
     
 def save_config(config, filename):
@@ -58,34 +59,24 @@ class SafeMode:
     def list_labels(self):
         return [n for n in self.labels]
    
-    def update_labels(self, new_labels):
+    def update_labels(self, event):
         pretty_print('DISPLAY', 'Updating Labels')
-        for name in new_labels:
+        event['time'] = time.time()#! the event should determine which labels are changed
+        for name in event.keys():
             try:
-                label_txt = self.label_formats[name] % new_labels[name]
+                label_txt = self.label_formats[name] % event[name]
                 self.labels[name].set(label_txt)
                 self.master.update_idletasks()
             except KeyError as error:
                 pretty_print('ERROR', "label '%s' does not exist" % name)
                 
 if __name__ == '__main__':
-    config = {
-        'geometry' : '640x480+0+0',
-        'fullscreen' : True,
-        'state' : 'normal',
-        'pad' : 3,
-        'bg' : '#FFFFFF',
-        'labels' : {
-            'test' : {
-                'format' : '%s sec',
-                'initial_value' : '',
-                'x' : 0,
-                'y' : 20,
-                'font_type' : 'Helvetica',
-                'font_size' : 24,
-                'bg_color' : '#FFFFFF'
-            }
-        }
-    }
-    save_config(config, 'test')
+    with open('hud_config.json', 'r') as jsonfile:
+        config = json.loads(jsonfile.read())
     display = SafeMode(config)
+    while True:
+        try:
+            e = {'mcu': 'TCS', 'w_eng': 3600 } 
+            display.update_labels(e)
+        except KeyboardInterrupt:
+            break
