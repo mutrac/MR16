@@ -88,17 +88,24 @@ class WatchDog:
         pretty_print(task, msg)
     
     ## Listen for Messages
+    #! TODO Include setting warnings for the debugger page
     def listen(self):
         try:
+            # Receive message from CAN
             packet = self.socket.recv()
             message = json.loads(packet)
             pretty_print('OBD', str(message))
+            
+            # Handle data or errors
+            
+            # Send response to CAN
             response = {
                 'type' : 'response'
                 }
             dump = json.dumps(response)
             self.socket.send(dump)
             pretty_print('OBD', str(response))
+            
         except Exception as error:
             pretty_print('OBD_ERR', str(error))
     
@@ -126,7 +133,7 @@ class WatchDog:
 if __name__ == '__main__':
 
     ## Load config file
-    with open('obd_config.json', 'r') as jsonfile:
+    with open('OBD.json', 'r') as jsonfile:
         config = json.loads(jsonfile.read())
     
     ## start watchdog

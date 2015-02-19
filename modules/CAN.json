@@ -1,6 +1,6 @@
 {
     "ZMQ_SERVER" : "tcp://127.0.0.1:1980",
-    "ZMQ_TIMEOUT" : 200,
+    "ZMQ_TIMEOUT" : 5000,
     "CONTROLLERS" : {
         "1": {
             "baud" : 9600, 

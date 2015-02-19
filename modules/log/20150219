@@ -1290,3 +1290,98 @@ INFO:cherrypy.error:[19/Feb/2015:05:28:52] ENGINE Bus STOPPED
 INFO:cherrypy.error:[19/Feb/2015:05:28:52] ENGINE Bus EXITING
 INFO:cherrypy.error:[19/Feb/2015:05:28:52] ENGINE Bus EXITED
 INFO:cherrypy.error:[19/Feb/2015:05:28:52] ENGINE Waiting for child threads to terminate...
+INFO:cherrypy.error:[19/Feb/2015:05:34:07] ENGINE Listening for SIGHUP.
+INFO:cherrypy.error:[19/Feb/2015:05:34:07] ENGINE Listening for SIGTERM.
+INFO:cherrypy.error:[19/Feb/2015:05:34:07] ENGINE Listening for SIGUSR1.
+INFO:cherrypy.error:[19/Feb/2015:05:34:07] ENGINE Bus STARTING
+INFO:cherrypy.error:[19/Feb/2015:05:34:07] ENGINE Started monitor thread '_TimeoutMonitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:34:07] ENGINE Started monitor thread 'Monitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:34:07] ENGINE Started monitor thread 'Autoreloader'.
+INFO:cherrypy.error:[19/Feb/2015:05:34:07] ENGINE Serving on 127.0.0.1:8080
+INFO:cherrypy.error:[19/Feb/2015:05:34:07] ENGINE Bus STARTED
+INFO:cherrypy.access.165623916:127.0.0.1 - - [19/Feb/2015:05:35:12] "GET / HTTP/1.1" 200 305 "" "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+INFO:cherrypy.access.165623916:127.0.0.1 - - [19/Feb/2015:05:35:21] "GET / HTTP/1.1" 200 305 "" "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+INFO:cherrypy.access.165623916:127.0.0.1 - - [19/Feb/2015:05:35:28] "GET / HTTP/1.1" 200 305 "" "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+INFO:cherrypy.access.165623916:127.0.0.1 - - [19/Feb/2015:05:35:59] "GET / HTTP/1.1" 200 305 "" "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+INFO:cherrypy.error:[19/Feb/2015:05:36:04] ENGINE Keyboard Interrupt: shutting down bus
+INFO:cherrypy.error:[19/Feb/2015:05:36:04] ENGINE Bus STOPPING
+INFO:cherrypy.error:[19/Feb/2015:05:36:05] ENGINE HTTP Server cherrypy._cpwsgi_server.CPWSGIServer((u'127.0.0.1', 8080)) shut down
+INFO:cherrypy.error:[19/Feb/2015:05:36:05] ENGINE Stopped thread 'Autoreloader'.
+INFO:cherrypy.error:[19/Feb/2015:05:36:05] ENGINE Stopped thread 'Monitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:36:05] ENGINE Stopped thread '_TimeoutMonitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:36:05] ENGINE Bus STOPPED
+INFO:cherrypy.error:[19/Feb/2015:05:36:05] ENGINE Bus EXITING
+INFO:cherrypy.error:[19/Feb/2015:05:36:05] ENGINE Bus EXITED
+INFO:cherrypy.error:[19/Feb/2015:05:36:05] ENGINE Waiting for child threads to terminate...
+INFO:cherrypy.error:[19/Feb/2015:05:36:05] ENGINE Waiting for thread CP Server Thread-7.
+INFO:cherrypy.error:[19/Feb/2015:05:36:24] ENGINE Listening for SIGHUP.
+INFO:cherrypy.error:[19/Feb/2015:05:36:24] ENGINE Listening for SIGTERM.
+INFO:cherrypy.error:[19/Feb/2015:05:36:24] ENGINE Listening for SIGUSR1.
+INFO:cherrypy.error:[19/Feb/2015:05:36:24] ENGINE Bus STARTING
+INFO:cherrypy.error:[19/Feb/2015:05:36:24] ENGINE Started monitor thread '_TimeoutMonitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:36:24] ENGINE Started monitor thread 'Monitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:36:24] ENGINE Started monitor thread 'Autoreloader'.
+INFO:cherrypy.error:[19/Feb/2015:05:36:24] ENGINE Serving on 127.0.0.1:8080
+INFO:cherrypy.error:[19/Feb/2015:05:36:24] ENGINE Bus STARTED
+INFO:cherrypy.access.175372396:127.0.0.1 - - [19/Feb/2015:05:36:39] "GET / HTTP/1.1" 200 305 "" "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+INFO:cherrypy.error:[19/Feb/2015:05:36:49] ENGINE Keyboard Interrupt: shutting down bus
+INFO:cherrypy.error:[19/Feb/2015:05:36:49] ENGINE Bus STOPPING
+INFO:cherrypy.error:[19/Feb/2015:05:36:49] ENGINE HTTP Server cherrypy._cpwsgi_server.CPWSGIServer((u'127.0.0.1', 8080)) shut down
+INFO:cherrypy.error:[19/Feb/2015:05:36:49] ENGINE Stopped thread 'Autoreloader'.
+INFO:cherrypy.error:[19/Feb/2015:05:36:49] ENGINE Stopped thread 'Monitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:36:49] ENGINE Stopped thread '_TimeoutMonitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:36:49] ENGINE Bus STOPPED
+INFO:cherrypy.error:[19/Feb/2015:05:36:49] ENGINE Bus EXITING
+INFO:cherrypy.error:[19/Feb/2015:05:36:49] ENGINE Bus EXITED
+INFO:cherrypy.error:[19/Feb/2015:05:36:49] ENGINE Waiting for child threads to terminate...
+INFO:cherrypy.error:[19/Feb/2015:05:54:39] ENGINE Listening for SIGHUP.
+INFO:cherrypy.error:[19/Feb/2015:05:54:39] ENGINE Listening for SIGTERM.
+INFO:cherrypy.error:[19/Feb/2015:05:54:39] ENGINE Listening for SIGUSR1.
+INFO:cherrypy.error:[19/Feb/2015:05:54:39] ENGINE Bus STARTING
+INFO:cherrypy.error:[19/Feb/2015:05:54:39] ENGINE Started monitor thread 'Autoreloader'.
+INFO:cherrypy.error:[19/Feb/2015:05:54:39] ENGINE Started monitor thread 'Monitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:54:39] ENGINE Started monitor thread '_TimeoutMonitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:54:39] ENGINE Serving on 127.0.0.1:8080
+INFO:cherrypy.error:[19/Feb/2015:05:54:39] ENGINE Bus STARTED
+INFO:cherrypy.error:[19/Feb/2015:05:56:06] ENGINE Caught signal SIGTERM.
+INFO:cherrypy.error:[19/Feb/2015:05:56:06] ENGINE Bus STOPPING
+INFO:cherrypy.error:[19/Feb/2015:05:56:06] ENGINE HTTP Server cherrypy._cpwsgi_server.CPWSGIServer((u'127.0.0.1', 8080)) shut down
+INFO:cherrypy.error:[19/Feb/2015:05:56:06] ENGINE Stopped thread '_TimeoutMonitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:56:06] ENGINE Stopped thread 'Monitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:56:06] ENGINE Stopped thread 'Autoreloader'.
+INFO:cherrypy.error:[19/Feb/2015:05:56:06] ENGINE Bus STOPPED
+INFO:cherrypy.error:[19/Feb/2015:05:56:06] ENGINE Bus EXITING
+INFO:cherrypy.error:[19/Feb/2015:05:56:06] ENGINE Bus EXITED
+INFO:cherrypy.error:[19/Feb/2015:05:56:06] ENGINE Waiting for child threads to terminate...
+INFO:cherrypy.error:[19/Feb/2015:05:57:17] ENGINE Listening for SIGHUP.
+INFO:cherrypy.error:[19/Feb/2015:05:57:17] ENGINE Listening for SIGTERM.
+INFO:cherrypy.error:[19/Feb/2015:05:57:17] ENGINE Listening for SIGUSR1.
+INFO:cherrypy.error:[19/Feb/2015:05:57:17] ENGINE Bus STARTING
+INFO:cherrypy.error:[19/Feb/2015:05:57:17] ENGINE Started monitor thread 'Monitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:57:17] ENGINE Started monitor thread '_TimeoutMonitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:57:17] ENGINE Started monitor thread 'Autoreloader'.
+INFO:cherrypy.error:[19/Feb/2015:05:57:17] ENGINE Serving on 127.0.0.1:8080
+INFO:cherrypy.error:[19/Feb/2015:05:57:17] ENGINE Bus STARTED
+INFO:cherrypy.error:[19/Feb/2015:05:57:20] ENGINE Keyboard Interrupt: shutting down bus
+INFO:cherrypy.error:[19/Feb/2015:05:57:20] ENGINE Bus STOPPING
+INFO:cherrypy.error:[19/Feb/2015:05:57:20] ENGINE HTTP Server cherrypy._cpwsgi_server.CPWSGIServer((u'127.0.0.1', 8080)) shut down
+INFO:cherrypy.error:[19/Feb/2015:05:57:20] ENGINE Stopped thread 'Monitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:57:20] ENGINE Stopped thread 'Autoreloader'.
+INFO:cherrypy.error:[19/Feb/2015:05:57:20] ENGINE Stopped thread '_TimeoutMonitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:57:20] ENGINE Bus STOPPED
+INFO:cherrypy.error:[19/Feb/2015:05:57:20] ENGINE Bus EXITING
+INFO:cherrypy.error:[19/Feb/2015:05:57:20] ENGINE Bus EXITED
+INFO:cherrypy.error:[19/Feb/2015:05:57:20] ENGINE Waiting for child threads to terminate...
+INFO:cherrypy.error:[19/Feb/2015:05:57:29] ENGINE Listening for SIGHUP.
+INFO:cherrypy.error:[19/Feb/2015:05:57:29] ENGINE Listening for SIGTERM.
+INFO:cherrypy.error:[19/Feb/2015:05:57:29] ENGINE Listening for SIGUSR1.
+INFO:cherrypy.error:[19/Feb/2015:05:57:29] ENGINE Bus STARTING
+INFO:cherrypy.error:[19/Feb/2015:05:57:29] ENGINE Started monitor thread 'Autoreloader'.
+INFO:cherrypy.error:[19/Feb/2015:05:57:29] ENGINE Started monitor thread '_TimeoutMonitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:57:29] ENGINE Started monitor thread 'Monitor'.
+INFO:cherrypy.error:[19/Feb/2015:05:57:30] ENGINE Serving on 127.0.0.1:8080
+INFO:cherrypy.error:[19/Feb/2015:05:57:30] ENGINE Bus STARTED
+INFO:cherrypy.access.146421804:127.0.0.1 - - [19/Feb/2015:05:57:46] "GET / HTTP/1.1" 200 305 "" "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+INFO:cherrypy.access.146421804:127.0.0.1 - - [19/Feb/2015:05:57:47] "GET / HTTP/1.1" 200 305 "" "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+INFO:cherrypy.access.146421804:127.0.0.1 - - [19/Feb/2015:05:57:49] "GET / HTTP/1.1" 200 305 "" "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+INFO:cherrypy.access.146421804:127.0.0.1 - - [19/Feb/2015:05:57:59] "GET / HTTP/1.1" 200 305 "" "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"

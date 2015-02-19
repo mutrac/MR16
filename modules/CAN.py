@@ -123,9 +123,9 @@ class CAN(object):
                     if socks:
                         if socks.get(self.zmq_client) == zmq.POLLIN:
                             dump = self.zmq_client.recv(zmq.NOBLOCK)
-                            self.system.generate_event('ZMQ_MSG_OUT', str(e))
+                            self.system.generate_event('ZMQ_RECV', str(e))
                             response = json.loads(dump)
-                            self.system.generate_event('ZMQ_MSG_IN', str(response))
+                            self.system.generate_event('ZMQ_SEND', str(response))
                         else:
                             self.system.generate_event('ZMQ_ERR_3', 'Poller Timeout')
                     else:
@@ -150,7 +150,7 @@ class CAN(object):
 if __name__ == '__main__':
     
     ## Load settings file --> needed for proper initialization
-    with open('can_config.json', 'r') as jsonfile:
+    with open('CAN.json', 'r') as jsonfile:
         config = json.loads(jsonfile.read())
         
     ## Start the serial network

@@ -18,15 +18,11 @@ def pretty_print(task, msg):
     date = datetime.strftime(datetime.now(), '%d/%b/%Y:%H:%M:%S')
     print("%s %s %s" % (date, task, msg))
     
-def save_config(config, filename):
-    with open(filename, 'w') as jsonfile:
-        jsonfile.write(json.dumps(config, indent=True))
-    
 # Classes (Note: class names should be capitalized)
 class SafeMode: 
 
     def __init__(self, config):
-        pretty_print('INIT', 'Setting Layout')
+        pretty_print('DISP_INIT', 'Setting Layout')
         self.master = tk.Tk()
         self.master.config(background = config['bg'])
         self._geom = config['geometry']
@@ -60,7 +56,7 @@ class SafeMode:
         return [n for n in self.labels]
    
     def update_labels(self, event):
-        pretty_print('DISPLAY', 'Updating Labels')
+        pretty_print('DISP', 'Updating Labels')
         event['time'] = time.time()#! the event should determine which labels are changed
         for name in event.keys():
             try:
@@ -68,11 +64,15 @@ class SafeMode:
                 self.labels[name].set(label_txt)
                 self.master.update_idletasks()
             except KeyError as error:
-                pretty_print('ERROR', "label '%s' does not exist" % name)
+                pretty_print('DISP_ERR', "label '%s' does not exist" % name)
                 
 if __name__ == '__main__':
-    with open('hud_config.json', 'r') as jsonfile:
+    
+    # Load settings file
+    with open('HUD.json', 'r') as jsonfile:
         config = json.loads(jsonfile.read())
+        
+    # Run in infinite simple loop
     display = SafeMode(config)
     while True:
         try:
