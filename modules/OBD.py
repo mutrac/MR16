@@ -6,6 +6,7 @@ __version___ = 0.1
 
 # Dependencies
 import logging
+import zmq
 import pymongo
 import cherrypy
 from cherrypy.process.plugins import Monitor
@@ -15,15 +16,20 @@ from datetime import datetime
 import thread
 import json
 
+# Useful Functions 
+def pretty_print(task, msg):
+    date = datetime.strftime(datetime.now(), '[%d/%b/%Y:%H:%M:%S]')
+    print("%s %s %s" % (date, task, msg))
+
 # Classes
 class WatchDog:
 
     ## Init
     def __init__(self, config):
         self.config = config
+        self.init_mq()
         self.init_db()
         self.init_logging()
-        thread.start_new_thread(self.run, ())
         
     def __close__(self):
         thread.exit()
@@ -34,10 +40,17 @@ class WatchDog:
         cherrypy.server.socket_port = self.config['CHERRYPY_PORT']
         currdir = os.path.dirname(os.path.abspath(__file__))
         conf = {
-        '/': {'tools.staticdir.on':True, 'tools.staticdir.dir':os.path.join(currdir,'static')},
-        '/data': {'tools.staticdir.on':True, 'tools.staticdir.dir':os.path.join(currdir,'data')}, # NEED the '/' before the folder name
+            '/' : {'tools.staticdir.on':True, 'tools.staticdir.dir':os.path.join(currdir,'static')},
+            '/data' : {'tools.staticdir.on':True, 'tools.staticdir.dir':os.path.join(currdir,'data')}, # NEED the '/' before the folder name
         }
         cherrypy.quickstart(self, '/', config=conf)
+    
+    ## Initialize Messenger Query
+    def init_mq(self):
+        Monitor(cherrypy.engine, self.listen, frequency=self.config['ZMQ_FREQ']).subscribe()
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.REP)
+        self.socket.bind(self.config['ZMQ_SERVER'])
         
     ## Initialize DB
     def init_db(self):
@@ -45,17 +58,17 @@ class WatchDog:
             self.mongo_client = pymongo.MongoClient(self.config['MONGO_ADDR'], self.config['MONGO_PORT'])        
             self.add_log_entry(self.make_event('DB', 'OKAY - Initialized DB'))
         except Exception as error:
-            self.add_log_entry(self.make_event('ERROR', str(error)))
+            self.add_log_entry(self.make_event('ODB_ERR', str(error)))
 
     ## Initialize Logging
     def init_logging(self):
         try:
-            self.log_path = '%s/%s' % (self.config['LOG_DIR'], datetime.strftime(datetime.now(), self.config['LOG_FILE']))
+            self.log_path = os.path.join(self.config['LOG_DIR'], datetime.strftime(datetime.now(), self.config['LOG_FILE']))
             logging.basicConfig(filename=self.log_path, level=logging.DEBUG)
         except Exception as error:
-            self.add_log_entry(self.make_event('ERROR', str(error)))
+            self.add_log_entry(self.make_event('OBD_ERR', str(error)))
     
-        
+    ## Make Event
     def make_event(self, task, msg):
         e = {
             'type' : task,
@@ -72,8 +85,23 @@ class WatchDog:
         db_name = datetime.strftime(datetime.now(), '%Y%m%d')
         db = self.mongo_client[db_name]
         uuid = db[task].insert(event)
-        print('%s %s %s' % (date, task, msg))
-
+        pretty_print(task, msg)
+    
+    ## Listen for Messages
+    def listen(self):
+        try:
+            packet = self.socket.recv()
+            message = json.loads(packet)
+            pretty_print('OBD', str(message))
+            response = {
+                'type' : 'response'
+                }
+            dump = json.dumps(response)
+            self.socket.send(dump)
+            pretty_print('OBD', str(response))
+        except Exception as error:
+            pretty_print('OBD_ERR', str(error))
+    
     """
     Handler Functions
     """
@@ -82,7 +110,7 @@ class WatchDog:
     def index(self):
         html = open('static/index.html').read()
         #! Add render of error page
-        return html
+        return html  
     
     ## Handle Posts
     @cherrypy.expose
@@ -96,7 +124,11 @@ class WatchDog:
     
 # Main
 if __name__ == '__main__':
+
+    ## Load config file
     with open('obd_config.json', 'r') as jsonfile:
         config = json.loads(jsonfile.read())
+    
+    ## start watchdog
     daemon = WatchDog(config)
     daemon.run()

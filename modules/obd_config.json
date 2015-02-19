@@ -4,7 +4,10 @@
     "MONGO_DB" : "%Y%m",
     "CHERRYPY_ADDR" : "127.0.0.1",
     "CHERRYPY_PORT" : 8080,
+    "LOG_DIR" : "log",
     "LOG_FILE" : "%Y%m%d",
     "DATE_FORMAT" : "%d/%b/%Y:%H:%M:%S",
-    "LOG_FORMAT" : "[%s] %s %s"
+    "LOG_FORMAT" : "[%s] %s %s",
+    "ZMQ_SERVER" : "tcp://*:1980",
+    "ZMQ_FREQ" : 0.001
 }
