@@ -1385,3 +1385,13 @@ INFO:cherrypy.access.146421804:127.0.0.1 - - [19/Feb/2015:05:57:46] "GET / HTTP/
 INFO:cherrypy.access.146421804:127.0.0.1 - - [19/Feb/2015:05:57:47] "GET / HTTP/1.1" 200 305 "" "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
 INFO:cherrypy.access.146421804:127.0.0.1 - - [19/Feb/2015:05:57:49] "GET / HTTP/1.1" 200 305 "" "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
 INFO:cherrypy.access.146421804:127.0.0.1 - - [19/Feb/2015:05:57:59] "GET / HTTP/1.1" 200 305 "" "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
+INFO:cherrypy.error:[19/Feb/2015:23:52:36] ENGINE Caught signal SIGTERM.
+INFO:cherrypy.error:[19/Feb/2015:23:52:36] ENGINE Bus STOPPING
+INFO:cherrypy.error:[19/Feb/2015:23:52:36] ENGINE HTTP Server cherrypy._cpwsgi_server.CPWSGIServer((u'127.0.0.1', 8080)) shut down
+INFO:cherrypy.error:[19/Feb/2015:23:52:36] ENGINE Stopped thread '_TimeoutMonitor'.
+INFO:cherrypy.error:[19/Feb/2015:23:52:36] ENGINE Stopped thread 'Autoreloader'.
+INFO:cherrypy.error:[19/Feb/2015:23:52:36] ENGINE Stopped thread 'Monitor'.
+INFO:cherrypy.error:[19/Feb/2015:23:52:36] ENGINE Bus STOPPED
+INFO:cherrypy.error:[19/Feb/2015:23:52:36] ENGINE Bus EXITING
+INFO:cherrypy.error:[19/Feb/2015:23:52:36] ENGINE Bus EXITED
+INFO:cherrypy.error:[19/Feb/2015:23:52:36] ENGINE Waiting for child threads to terminate...
