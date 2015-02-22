@@ -3,6 +3,4 @@
 # This script is responsible for starting all of the necessary subsystems
 # As such, it's SUPER IMPORTANT
 
-python OBD.py &
-python CAN.py &
-python HUD.py
+python base.py 

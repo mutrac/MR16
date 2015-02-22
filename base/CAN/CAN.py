@@ -146,21 +146,3 @@ class CAN(object):
         except Exception:
             pretty_print('RESET ERROR', 'failed on reset')
             return True #! TODO indicates errors on reset
-    
-if __name__ == '__main__':
-    
-    ## Load settings file --> needed for proper initialization
-    with open('CAN.json', 'r') as jsonfile:
-        config = json.loads(jsonfile.read())
-        
-    ## Start the serial network
-    mimo = MIMO(config)
-    can = CAN(mimo)
-    
-    ## Run the CAN as a listen_all() loop
-    try:
-        can.run()
-    except KeyboardInterrupt:
-        pass
-    except Exception as error:
-        pretty_print('ERROR', str(error))

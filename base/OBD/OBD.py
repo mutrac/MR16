@@ -63,7 +63,7 @@ class WatchDog:
     ## Initialize Logging
     def init_logging(self):
         try:
-            self.log_path = os.path.join(self.config['LOG_DIR'], datetime.strftime(datetime.now(), self.config['LOG_FILE']))
+            self.log_path = os.path.join(os.getcwd(), datetime.strftime(datetime.now(), self.config['LOG_FILE']))
             logging.basicConfig(filename=self.log_path, level=logging.DEBUG)
         except Exception as error:
             self.add_log_entry(self.make_event('OBD_ERR', str(error)))
