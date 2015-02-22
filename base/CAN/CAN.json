@@ -3,7 +3,7 @@
     "ZMQ_TIMEOUT" : 5000,
     "CONTROLLERS" : {
         "1": {
-            "baud" : 9600, 
+            "baud" : 57600, 
             "path" : "/dev/ttyACM0",
             "timeout" : 0.1
         }
