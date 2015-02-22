@@ -1,5 +1,5 @@
 """
-    OBD
+OBD.py - Onboard Diagnostic System
 """
 __author__ = 'Trevor Stanhope'
 __version___ = 0.1
@@ -55,8 +55,11 @@ class WatchDog:
     ## Initialize DB
     def init_db(self):
         try:
-            self.mongo_client = pymongo.MongoClient(self.config['MONGO_ADDR'], self.config['MONGO_PORT'])        
-            self.add_log_entry(self.make_event('DB', 'OKAY - Initialized DB'))
+            addr = self.config['MONGO_ADDR']
+            port = self.config['MONGO_PORT']
+            self.mongo_client = pymongo.MongoClient(addr, port)
+            event = self.make_event('DB_OK', 'Initialized DB on %s:%d' % (addr, port))
+            self.add_log_entry(event)
         except Exception as error:
             self.add_log_entry(self.make_event('ODB_ERR', str(error)))
 
@@ -128,14 +131,3 @@ class WatchDog:
         except Exception as error:
             self.add_log_entry(self.make_event('ERROR', str(error)))
         return None
-    
-# Main
-if __name__ == '__main__':
-
-    ## Load config file
-    with open('OBD.json', 'r') as jsonfile:
-        config = json.loads(jsonfile.read())
-    
-    ## start watchdog
-    daemon = WatchDog(config)
-    daemon.run()

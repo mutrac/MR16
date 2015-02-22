@@ -34,26 +34,36 @@ class MIMO:
         self.config = config
         self.controllers = {}
         try:
-            for name in config['CONTROLLERS']: 
-                dev = self.config[name]
+            for name in self.config['CONTROLLERS']: 
+                dev = self.config['CONTROLLERS'][name]
                 self.add_controller(dev['path'], dev['baud'])
         except Exception as error:
-            pretty_print('INIT ERROR', str(error))
-        pretty_print('INIT CAN', 'Controller List : %s' % self.list_controllers())
+            pretty_print('CAN ERR1', str(error))
+        pretty_print('CAN INIT', 'Controller List : %s' % self.list_controllers())
         
     # Add new controller to the network
     # TODO: handle errors
-    def add_controller(self, dev_path, baud):
+    def add_controller(self, dev_path, baud, attempts=5):
         try:
-            port = serial.Serial(dev_path, baud)
-            string = port.read()
-            data = ast.literal_eval(string)
-            dev_id = data['id']
-            self.controllers[dev_id] = port  #! make into own class?
-            self.generate_event('CAN_ADD', dev_id)
+            pretty_print('CAN ADD', 'Trying to add %s @ %d' % (dev_path, baud))
+            for i in range(attempts):
+                try:
+                    port = serial.Serial(dev_path, baud)
+                    string = port.readline()
+                    if string is not None:
+                        try:    
+                            data = ast.literal_eval(string)
+                            dev_id = data['id']
+                        except Exception as e:
+                            raise KeyError('Failed to find valid ID')
+                        self.controllers[dev_id] = port  #! make into own class?
+                        self.generate_event('CAN ADD', dev_id)
+                except Exception as e:
+                    pretty_print('CAN ERR', str(e))
+            raise ValueError('All attempts failed')
         except Exception as error:
-            self.generate_event('ADD_ERR', str(error))
-            raise error
+            self.generate_event('CAN ERR', str(error))
+            raise ValueError('CAN ERR')
         
     # Remove controller from the network
     def remove_controller(self, dev_id):
@@ -62,7 +72,7 @@ class MIMO:
             port.close_all()
             del self.controllers[dev_id]
         except Exception as error:
-            self.generate_event('RMV_ERR', str(error))
+            self.generate_event('CAN ERR', str(error))
             raise error
     
     # Generate event/error
@@ -81,26 +91,25 @@ class MIMO:
             try:
                 events = []
                 for c in self.controllers:
-                    print c
-                    tout = self.config['controllers']['timeout']
+                    tout = self.config['CONTROLLERS'][c]['timeout']
                     dump = c.read(timeout=tout)
                     e = ast.literal_eval(dump) #! TODO Check for malformed data
-                    print e
                     events.append(e)
                 return events
             except Exception as error:
-                return [self.generate_event("CAN ERR_1", str(error))]
+                return [self.generate_event("CAN ERR", str(error))]
         else:
-            return [self.generate_event("CAN_ERR_0", 'no controllers in network!')]
+            return [self.generate_event("CAN ERR", 'No controllers found in network!')]
     
     # List controllers
     def list_controllers(self):
         return self.controllers.keys()
     
 """
-CAN/ZMQ Wondersystem
+CMQ is a CAN/ZMQ Wondersystem
+This class is responsible for relaying all serial activity
 """    
-class CAN(object):
+class CMQ(object):
 
     # Initialize
     def __init__(self, object):
@@ -123,21 +132,21 @@ class CAN(object):
                     if socks:
                         if socks.get(self.zmq_client) == zmq.POLLIN:
                             dump = self.zmq_client.recv(zmq.NOBLOCK)
-                            self.system.generate_event('ZMQ_RECV', str(e))
+                            self.system.generate_event('CMQ RECV', str(e))
                             response = json.loads(dump)
-                            self.system.generate_event('ZMQ_SEND', str(response))
+                            self.system.generate_event('CMQ SEND', str(response))
                         else:
-                            self.system.generate_event('ZMQ_ERR_3', 'Poller Timeout')
+                            self.system.generate_event('CMQ ERR', 'Poller Timeout')
                     else:
-                        self.system.generate_event('ZMQ_ERR_1', 'Socket Timeout')
+                        self.system.generate_event('CMQ ERR', 'Socket Timeout')
                 except Exception as error:
-                    self.system.generate_event('ZMQ_ERR_0', str(error))
+                    self.system.generate_event('CMQ ERR', str(error))
                     reset_trig = True
             if reset_trig:
-                reset_trig = self.reset_zmq()
+                reset_trig = self.reset()
     
-    # Reset ZMQ connection
-    def reset_zmq(self):
+    # Reset server socket connection
+    def reset(self):
         pretty_print('RESET','')
         try:
             self.zmq_client = self.zmq_context.socket(zmq.REQ)

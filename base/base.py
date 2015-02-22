@@ -3,6 +3,7 @@ base file for the MR16 vehicle system
 """
 
 from CAN.CAN import MIMO
+from CAN.CAN import CMQ
 from HUD.HUD import SafeMode
 from OBD.OBD import WatchDog
 import tests
@@ -12,9 +13,9 @@ def test_CAN():
     with open('CAN/CAN.json', 'r') as jsonfile:
         config = json.loads(jsonfile.read()) # Load settings file 
     mimo = MIMO(config) # Start the serial network
-    can = CAN(mimo) # Start the MQ client
+    cmq = CMQ(mimo) # Start the MQ client
     try:
-        can.run()
+        cmq.run()
     except KeyboardInterrupt:
         pass
     except Exception as error:
@@ -38,4 +39,4 @@ def test_OBD():
     daemon.run()
 
 if __name__ == '__main__':
-    test_OBD()
+    test_CAN()
