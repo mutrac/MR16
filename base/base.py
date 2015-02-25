@@ -6,6 +6,7 @@ from CAN.CAN import MIMO
 from CAN.CAN import CMQ
 from HUD.HUD import SafeMode
 from OBD.OBD import WatchDog
+from V6.V6 import V6
 import tests
 import json
 
@@ -38,5 +39,14 @@ def test_OBD():
     daemon = WatchDog(config) # start watchdog
     daemon.run()
 
+def test_V6():
+    with open('V6/V6.json', 'r') as jsonfile:
+        config = json.loads(jsonfile.read()) # Load config file
+    cam = V6(config) # start watchdog
+    cam.speed()
+
 if __name__ == '__main__':
     test_CAN()
+    test_OBD()
+    test_HUD()
+    test_V6()
