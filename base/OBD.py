@@ -1,5 +1,8 @@
 """
 OBD.py - Onboard Diagnostic System
+
+This system behaves as the hub for all controller activity and as such hosts
+the ZMQ server.
 """
 __author__ = 'Trevor Stanhope'
 __version___ = 0.1
@@ -66,7 +69,7 @@ class WatchDog:
     ## Initialize Logging
     def init_logging(self):
         try:
-            self.log_path = os.path.join(os.getcwd(), datetime.strftime(datetime.now(), self.config['LOG_FILE']))
+            self.log_path = os.path.join(os.getcwd(), 'log', datetime.strftime(datetime.now(), self.config['LOG_FILE']))
             logging.basicConfig(filename=self.log_path, level=logging.DEBUG)
         except Exception as error:
             self.add_log_entry(self.make_event('OBD_ERR', str(error)))
@@ -99,7 +102,7 @@ class WatchDog:
             message = json.loads(packet)
             pretty_print('OBD', str(message))
             
-            # Handle data or errors
+            # TODO: Handle data or errors
             
             # Send response to CAN
             response = {
