@@ -1,6 +1,7 @@
 """
-Controller-Area Network
-This class is responsible for managing the controller network
+Controller Message Query (CMQ)
+This class is responsible for managing the controller network.
+
 """
 
 # Dependencies
@@ -11,6 +12,7 @@ import zmq
 from datetime import datetime
 import json
 import time
+import thread
 
 # Useful Functions 
 def pretty_print(task, msg):
@@ -20,9 +22,32 @@ def pretty_print(task, msg):
 def save_config(config, filename):
     with open(filename, 'w') as jsonfile:
         jsonfile.write(json.dumps(config, indent=True))
-        
-# Classes (Note: class names should be capitalized)
 
+"""
+Device Class
+This is a USB device which is part of a MIMO system
+"""
+class Controller:
+    def __init__(self, name, baud, timeout, rules):
+        self.name = name
+        self.baud = baud
+        self.timeout = timeout
+        self.rules = rules
+        """ 
+        Rules are formatted as a 4 part list:
+            1. Key
+            2. Value
+            3. UID
+            4. Message
+        """
+        try:
+            self.port = serial.Serial(name, baud, timeout)
+        except:
+            return None # return nothing if the device failed to start on USB
+        
+    def set_pid(self, pid):
+        self.pid = pid
+        
 """
 This is the MIMO class (Multiple-Input, Multiple-Output) which supports
 several USB serial connections and some custom network topologies via ZMQ. 
@@ -34,45 +59,45 @@ class MIMO:
         self.config = config
         self.controllers = {}
         try:
-            for name in self.config['CONTROLLERS']: 
-                dev = self.config['CONTROLLERS'][name]
-                self.add_controller(dev['path'], dev['baud'])
-        except Exception as error:
-            pretty_print('CAN ERR1', str(error))
-        pretty_print('CAN INIT', 'Controller List : %s' % self.list_controllers())
+            for dev in config: 
+                c = Controller(dev['name'], dev['baud'], dev['timeout'], dev['rules'])
+                if c: self.add_controller(c)
+        except Exception as e:
+            pretty_print('MIMO ERR', str(e))
+        pretty_print('MIMO INIT', 'Controller List : %s' % self.list_controllers())
         
     # Add new controller to the network
+    # Checks to make sure PID is correct before inserting into controllers dict
     # TODO: handle errors
-    def add_controller(self, dev_path, baud, attempts=5):
+    def add_controller(self, dev, attempts=1):
         try:
-            pretty_print('CAN ADD', 'Trying to add %s @ %d' % (dev_path, baud))
+            pretty_print('MIMO ADD', 'Trying to add %s @ %d' % (dev.name, dev.baud))
             for i in range(attempts):
                 try:
-                    port = serial.Serial(dev_path, baud)
-                    string = port.readline()
+                    string = dev.port.readline()
                     if string is not None:
                         try:    
                             data = ast.literal_eval(string)
-                            dev_id = data['id']
+                            uid = data['id'] #TODO Confirm if this is the right key
                         except Exception as e:
                             raise KeyError('Failed to find valid ID')
-                        self.controllers[dev_id] = port  #! make into own class?
-                        self.generate_event('CAN ADD', dev_id)
+                        self.controllers[uid] = dev
+                        self.generate_event('MIMO ADD', "%s is %s" % (dev.name, uid))
                 except Exception as e:
-                    pretty_print('CAN ERR', str(e))
-            raise ValueError('All attempts failed')
+                    pretty_print('MIMO ERR', str(e))
+            raise ValueError('All attempts failed when adding: %s' % dev.name)
         except Exception as error:
             self.generate_event('CAN ERR', str(error))
-            raise ValueError('CAN ERR')
+            raise ValueError('MIMO ERR')
         
-    # Remove controller from the network
-    def remove_controller(self, dev_id):
+    # Remove controller from the network by UID
+    def remove_controller(self, uid):
         try:
-            port = self.controllers[dev_id]
+            port = self.controllers[uid]
             port.close_all()
-            del self.controllers[dev_id]
+            del self.controllers[uid]
         except Exception as error:
-            self.generate_event('CAN ERR', str(error))
+            self.generate_event('MIMO ERR', str(error))
             raise error
     
     # Generate event/error
@@ -85,21 +110,31 @@ class MIMO:
         }
         return event
     
+    # Listen
+    def listen(self, dev):
+        pretty_print('listen()', dev.name)
+        dump = dev.port.read(timeout=dev.timeout)
+        event = ast.literal_eval(dump)
+        for (key, val, uid, msg) in dev.rules:
+            if (event['uid'] == uid) and (event[key] == val): # TODO: might have to handle Unicode
+                try:
+                    pretty_print('listen()', dev.name)
+                    target = self.controllers[uid]
+                    target.port.write(msg)
+                except Exception as e:
+                    pretty_print('listen() error', str(e))
+        return event
+        
     # Listen All  
     def listen_all(self):
         if self.controllers:
             try:
-                events = []
-                for c in self.controllers:
-                    tout = self.config['CONTROLLERS'][c]['timeout']
-                    dump = c.read(timeout=tout)
-                    e = ast.literal_eval(dump) #! TODO Check for malformed data
-                    events.append(e)
+                events = [self.listen(c) for c in self.controllers]
                 return events
             except Exception as error:
-                return [self.generate_event("CAN ERR", str(error))]
+                return [self.generate_event("MIMO ERR", str(error))]
         else:
-            return [self.generate_event("CAN ERR", 'No controllers found in network!')]
+            return [self.generate_event("MIMO ERR", 'No controllers found in network!')]
     
     # List controllers
     def list_controllers(self):
@@ -107,16 +142,22 @@ class MIMO:
     
 """
 CMQ is a CAN/ZMQ Wondersystem
-This class is responsible for relaying all serial activity
+
+This class is responsible for relaying all serial activity. The CMQ client is a
+single node in a wider network, this configuration of push-pull from client to
+server allows for multiple CMQ instances to communicate with a central host
+(e.g. the OBD) in more complex configurations.
 """    
 class CMQ(object):
 
     # Initialize
-    def __init__(self, object):
+    def __init__(self, object, addr="tcp://127.0.0.1:1980", timeout=0.1):
         self.system = object
+        self.addr = addr
+        self.timeout = timeout
         self.zmq_context = zmq.Context()
         self.zmq_client = self.zmq_context.socket(zmq.REQ)
-        self.zmq_client.connect(self.system.config['ZMQ_SERVER']) #! TODO: this class could have it's own inputs
+        self.zmq_client.connect(self.addr)
         self.zmq_poller = zmq.Poller()
         self.zmq_poller.register(self.zmq_client, zmq.POLLIN)
         
@@ -128,7 +169,7 @@ class CMQ(object):
                 try:
                     dump = json.dumps(e)
                     self.zmq_client.send(dump)
-                    socks = dict(self.zmq_poller.poll(self.system.config['ZMQ_TIMEOUT']))
+                    socks = dict(self.zmq_poller.poll(self.timeout))
                     if socks:
                         if socks.get(self.zmq_client) == zmq.POLLIN:
                             dump = self.zmq_client.recv(zmq.NOBLOCK)
@@ -150,7 +191,7 @@ class CMQ(object):
         pretty_print('RESET','')
         try:
             self.zmq_client = self.zmq_context.socket(zmq.REQ)
-            self.zmq_client.connect(self.system.config['ZMQ_SERVER'])
+            self.zmq_client.connect(self.addr)
             return False #! TODO indicates no errors
         except Exception:
             pretty_print('RESET ERROR', 'failed on reset')

@@ -1,19 +1,21 @@
 """
-base file for the MR16 vehicle system
+Main file for the MR16 vehicle system
+* On-board diagnostics (OBD)
+* Controller Message Query (CMQ)
+* Heads-up Display (HUD)
 """
 
-from CAN.CAN import MIMO
-from CAN.CAN import CMQ
-from HUD.HUD import SafeMode
-from OBD.OBD import WatchDog
-from V6.V6 import V6
-import tests
+__author__ = "Trevor Stanhope"
+__version__ = 0.1
+
+from CMQ import MIMO, CMQ
+from HUD import SafeMode
+from OBD import WatchDog
+from V6 import V6
 import json
 
-def test_CAN():
-    with open('CAN/CAN.json', 'r') as jsonfile:
-        config = json.loads(jsonfile.read()) # Load settings file 
-    mimo = MIMO(config) # Start the serial network
+def test_CMQ():
+    mimo = MIMO() # Start the serial network
     cmq = CMQ(mimo) # Start the MQ client
     try:
         cmq.run()
@@ -23,7 +25,7 @@ def test_CAN():
         pretty_print('ERROR', str(error))
 
 def test_HUD():
-    with open('HUD/HUD.json', 'r') as jsonfile:
+    with open('config/HUD_debug.json', 'r') as jsonfile:
         config = json.loads(jsonfile.read()) # Load settings file
     display = SafeMode(config)
     while True:
@@ -34,19 +36,19 @@ def test_HUD():
             break
             
 def test_OBD():
-    with open('OBD/OBD.json', 'r') as jsonfile:
+    with open('config/OBD_v1.json', 'r') as jsonfile:
         config = json.loads(jsonfile.read()) # Load config file
     daemon = WatchDog(config) # start watchdog
     daemon.run()
 
 def test_V6():
-    with open('V6/V6.json', 'r') as jsonfile:
+    with open('config/v6_v1.json', 'r') as jsonfile:
         config = json.loads(jsonfile.read()) # Load config file
     cam = V6(config) # start watchdog
     cam.speed()
 
 if __name__ == '__main__':
-    test_CAN()
-    test_OBD()
-    test_HUD()
-    test_V6()
+    test_OBD() # OBD needs to run before CMQ to receive notifications
+    test_CMQ()
+    #test_HUD()
+    #test_V6()
