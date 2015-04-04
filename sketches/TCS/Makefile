@@ -12,7 +12,7 @@
 
 ARDUINO_DIR  = /usr/share/arduino
 TARGET       = TCS
-BOARD_TAG    = uno # for dev use 'uno'
-ARDUINO_PORT = /dev/ttyS0 # for dev use '/dev/ttyACM0'
+BOARD_TAG    = due # for dev use 'uno'
+ARDUINO_PORT = /dev/ttACM0 # for dev use '/dev/ttyS0'
 ARDUINO_LIBS = PID_v1, AFMotor
 include /usr/share/arduino/Arduino.mk

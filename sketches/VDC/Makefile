@@ -11,8 +11,8 @@
 #   make upload
 
 ARDUINO_DIR  = /usr/share/arduino
-TARGET       = SBS
+TARGET       = VDC
 BOARD_TAG    = uno # for dev use 'uno'
-ARDUINO_PORT = /dev/ttyS0 # for dev use '/dev/ttyACM0'
+ARDUINO_PORT = /dev/ttyACM0 # for dev use '/dev/ttyAS0'
 ARDUINO_LIBS = DualVNH5019MotorShield, PID_v1
 include /usr/share/arduino/Arduino.mk
