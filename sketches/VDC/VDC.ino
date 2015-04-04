@@ -34,11 +34,11 @@ int CART_POS = 0;
 char OUTPUT_BUFFER[OUTPUT_SIZE];
 char DATA_BUFFER[DATA_SIZE];
 
-double SSetpoint, SInput, SOutput;
-double BSetpoint, BInput, BOutput;
+double steering_set, steering_in, steering_out;
+double ballast_set, ballast_in, ballast_out;
 
-PID steering(&SInput, &SOutput, &SSetpoint, 2, 5, 1, DIRECT);
-PID ballast(&BInput, &BOutput, &BSetpoint, 2, 5, 1, DIRECT);
+PID steering(&steering_in, &steering_out, &steering_set, 2, 5, 1, DIRECT);
+PID ballast(&ballast_in, &ballast_out, &ballast_set, 2, 5, 1, DIRECT);
 
 DualVNH5019MotorShield VDC; // M1 is Steering, M2 is Ballast
 
@@ -49,37 +49,32 @@ void setup() {
   pinMode(ACTUATOR_POSITION_PIN, INPUT);
   pinMode(SUSPENSION_POSITION_PIN, INPUT);
   pinMode(CART_POSITION_PIN, INPUT);
-  BSetpoint = 100;
-  SSetpoint = 100;
+  ballast_set= 100;
+  steering_set = 100;
   steering.SetMode(AUTOMATIC);
   ballast.SetMode(AUTOMATIC);
 }
 
 /* --- LOOP --- */
 void loop() {
-  
-  // read sensors
+    
+  // Set Steering
   STR_POS = analogRead(STEERING_POSITION_PIN);
   ACT_POS = analogRead(ACTUATOR_POSITION_PIN);
-  CART_POS = analogRead(CART_POSITION_PIN);
-  SUSP_POS = analogRead(SUSPENSION_POSITION_PIN);
-  
-  // Compute PID
-  ballast.Compute();
+  steering_in = double(ACT_POS);
+  steering_set = double(STR_POS);
   steering.Compute();
-  
-  // Set Steering
-  if (digitalRead(CART_FORWARD_PIN)) {
-    VDC.setM1Speed(400);
-  }
-  else if (digitalRead(CART_BACKWARD_PIN)) {
-    VDC.setM1Speed(-400);
+  if (VDC.getM1CurrentMilliamps()) {
+    VDC.setM1Speed(int(steering_out));
   }
   else {
     VDC.setM1Speed(0);
   }
   
   // Set Ballast
+  CART_POS = analogRead(CART_POSITION_PIN);
+  SUSP_POS = analogRead(SUSPENSION_POSITION_PIN);
+  ballast.Compute();
   if (LOAD_BALANCE_MODE) {
     VDC.setM2Speed(400);
   }
