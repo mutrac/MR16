@@ -76,7 +76,8 @@ void loop() {
   SUSP_POS = analogRead(SUSPENSION_POSITION_PIN);
   ballast.Compute();
   if (LOAD_BALANCE_MODE) {
-    VDC.setM2Speed(400);
+    int val = int(ballast_out);
+    VDC.setM2Speed(val);
   }
   else {
     if (digitalRead(CART_FORWARD_PIN)) {
