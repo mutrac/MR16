@@ -4,32 +4,45 @@
   Revision 2016
 */
 
-/* --- Libraries --- */
+/* --- LIBRARIES --- */
 #include "PID_v1.h"
+#include <DualVNH5019MotorShield.h>
 
-/* --- Global Constants --- */
+/* --- GLOBAL CONSTANTS --- */
 const char UID[] = "VDC";
 const int BAUD = 9600;
 const int DATA_SIZE = 128;
 const int OUTPUT_SIZE = 256;
+
+// Analog Inputs
 const int STEERING_POSITION_PIN = A0;
 const int ACTUATOR_POSITION_PIN = A1;
 const int SUSPENSION_POSITION_PIN = A2;
 const int CART_POSITION_PIN = A3;
 
-/* --- Global Variables --- */
+// Digital Inputs
+const int CART_FORWARD_PIN = 2;
+const int CART_BACKWARD_PIN = 3;
+
+/* --- GLOBAL VARIABLES --- */
+int LOAD_BALANCE_MODE = false;
 int STR_POS = 0;
 int ACT_POS = 0;
 int SUSP_POS = 0;
 int CART_POS = 0;
+
 char OUTPUT_BUFFER[OUTPUT_SIZE];
 char DATA_BUFFER[DATA_SIZE];
+
 double SSetpoint, SInput, SOutput;
 double BSetpoint, BInput, BOutput;
-PID steering(&SInput, &SOutput, &SSetpoint,2,5,1, DIRECT);
-PID ballast(&BInput, &BOutput, &BSetpoint,2,5,1, DIRECT);
 
-/* --- Setup --- */
+PID steering(&SInput, &SOutput, &SSetpoint, 2, 5, 1, DIRECT);
+PID ballast(&BInput, &BOutput, &BSetpoint, 2, 5, 1, DIRECT);
+
+DualVNH5019MotorShield VDC; // M1 is Steering, M2 is Ballast
+
+/* --- SETUP --- */
 void setup() {
   Serial.begin(BAUD);
   pinMode(STEERING_POSITION_PIN, INPUT);
@@ -42,7 +55,7 @@ void setup() {
   ballast.SetMode(AUTOMATIC);
 }
 
-/* --- Loop --- */
+/* --- LOOP --- */
 void loop() {
   
   // read sensors
@@ -51,7 +64,38 @@ void loop() {
   CART_POS = analogRead(CART_POSITION_PIN);
   SUSP_POS = analogRead(SUSPENSION_POSITION_PIN);
   
-  // format data buffer
+  // Compute PID
+  ballast.Compute();
+  steering.Compute();
+  
+  // Set Steering
+  if (digitalRead(CART_FORWARD_PIN)) {
+    VDC.setM1Speed(400);
+  }
+  else if (digitalRead(CART_BACKWARD_PIN)) {
+    VDC.setM1Speed(-400);
+  }
+  else {
+    VDC.setM1Speed(0);
+  }
+  
+  // Set Ballast
+  if (LOAD_BALANCE_MODE) {
+    VDC.setM2Speed(400);
+  }
+  else {
+    if (digitalRead(CART_FORWARD_PIN)) {
+      VDC.setM2Speed(400);
+    }
+    else if (digitalRead(CART_BACKWARD_PIN)) {
+      VDC.setM2Speed(-400);
+    }
+    else {
+      VDC.setM2Speed(0);
+    }
+  }
+  
+  // Format data buffer
   sprintf(DATA_BUFFER, "[str:%d,act:%d,cart:%d,susp:%d]", STR_POS, ACT_POS, CART_POS, SUSP_POS);
   
   // format output to USB host {id, data, chksum}
@@ -63,7 +107,8 @@ void loop() {
   ballast.Compute();
 }
 
-/* --- Check Sum --- */
+/* --- SYNCHRONOUS TASKS --- */
+// Check sum
 int checksum() {
   int sum = 0;
   for (int i = 0; i < DATA_SIZE; i++) {
@@ -71,4 +116,14 @@ int checksum() {
   }
   int val = sum % 256;
   return val;
+}
+
+// Check Throttle Up
+void set_cart_backward(void) {
+  VDC.setM1Speed(-400);
+}
+
+// Check Throttle Down
+void set_cart_forward(void) {
+  VDC.setM1Speed(400);
 }
