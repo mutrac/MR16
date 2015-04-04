@@ -1,22 +1,22 @@
 [
     {
         "name" : "/dev/ttyACM0",
-        "uid" : "VSC",
-        "baud" : 57600,
+        "uid" : "ESC",
+        "baud" : 9600,
         "timeout" : 0.1,
         "rules" : []
     }
     {
         "name" : "/dev/ttyACM1",
-        "uid" : "DTC",
-        "baud" : 57600,
+        "uid" : "TCS",
+        "baud" : 9600,
         "timeout" : 0.1,
         "rules" : []
     }
     {
         "name" : "/dev/ttyACM2",
         "uid" : "VDC",
-        "baud" : 57600,
+        "baud" : 9600,
         "timeout" : 0.1,
         "rules" : []
     }

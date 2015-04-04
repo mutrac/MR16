@@ -95,7 +95,7 @@ void loop() {
   sprintf(DATA_BUFFER, "[str:%d,act:%d,cart:%d,susp:%d]", STR_POS, ACT_POS, CART_POS, SUSP_POS);
   
   // format output to USB host {id, data, chksum}
-  sprintf(OUTPUT_BUFFER, "{'id':%s,'data':%s,'chksum':%d}", UID, DATA_BUFFER, checksum());
+  sprintf(OUTPUT_BUFFER, "{'uid':%s,'data':%s,'chksum':%d}", UID, DATA_BUFFER, checksum());
   Serial.println(OUTPUT_BUFFER);
   
   // handle PID

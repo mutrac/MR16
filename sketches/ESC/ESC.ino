@@ -12,7 +12,7 @@
 
 /* --- GLOBAL CONSTANTS --- */
 // CAN
-const char ID[] = "ESC";
+const char UID[] = "ESC";
 const int BAUD = 9600;
 const int OUTPUT_SIZE = 256;
 const int DATA_SIZE = 128;
@@ -153,7 +153,7 @@ void loop() {
   
   // USB
   sprintf(DATA_BUFFER, "{gnd_relay:%d,reg_relay:%d,starter_relay:%d,right_brake:%d,left_brake:%d,cvt_guard:%d,seat:%d,hitch:%d,ignition:%d}", GND_RELAY, REG_RELAY, START_RELAY, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, SEAT_KILL, HITCH_KILL, IGNITION);
-  sprintf(OUTPUT_BUFFER, "{'id':%s,'data':%s,'chksum':%d}", ID, DATA_BUFFER, checksum());
+  sprintf(OUTPUT_BUFFER, "{'uid':%s,'data':%s,'chksum':%d}", UID, DATA_BUFFER, checksum());
   Serial.println(OUTPUT_BUFFER);
 }
 
