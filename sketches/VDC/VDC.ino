@@ -80,10 +80,10 @@ void loop() {
     VDC.setM2Speed(val);
   }
   else {
-    if (digitalRead(CART_FORWARD_PIN)) {
+    if (digitalRead(CART_FORWARD_PIN) && !(digitalRead(CART_BACKWARD_PIN))) {
       VDC.setM2Speed(400);
     }
-    else if (digitalRead(CART_BACKWARD_PIN)) {
+    else if (digitalRead(CART_BACKWARD_PIN) && !(digitalRead(CART_FORWARD_PIN))) {
       VDC.setM2Speed(-400);
     }
     else {
