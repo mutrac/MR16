@@ -7,6 +7,8 @@
 #include "DualVNH5019MotorShield.h"
 #include "DallasTemperature.h"
 #include "OneWire.h"
+#include <PID_v1.h>
+#define RFID_READ 0x02
 
 /* --- GLOBAL CONSTANTS --- */
 // CAN
@@ -36,10 +38,10 @@ const int THROTTLE_UP_INT = 14; // These are set to an interrupt
 const int THROTTLE_DOWN_INT = 15; // These are set to an interrupt
 
 // Relays
-const int GROUND_RELAY_PIN = 2;
-const int REGULATOR_RELAY_PIN = 3;
-const int STARTER_RELAY_PIN = 4;
-const int ATOM_RELAY_PIN = 5;
+const int GROUND_RELAY_PIN = 35;
+const int REGULATOR_RELAY_PIN = 36;
+const int STARTER_RELAY_PIN = 37;
+const int ATOM_RELAY_PIN = 38;
 
 // Analog Input
 // A0 Reserved for DualVNH5019
@@ -48,19 +50,22 @@ const int LEFT_BRAKE_PIN = A2;
 const int RIGHT_BRAKE_PIN = A3;
 const int CVT_GUARD_PIN = A4;
 
+// Analog Output (PWM)
+const int THROTTLE_PWM_PIN = 2;
+
 /* --- GLOBAL VARIABLES --- */
 // Brakes
-int BRAKES_THRESH = 512;
-int BRAKES_P = 1;
-int BRAKES_I = 0;
-int BRAKES_D = 0;
+int BRAKES_VTHRESH = 512;
+int BRAKES_MILLIAMP_THRESH = 15000;
+int BRAKES_VMIN = 0;
+int BRAKES_VMAX = 1024;
 
 // Throttle
 int THROTTLE_MIN = 0;
 int THROTTLE_MAX = 1024;
-int THROTTLE_P = 1;
-int THROTTLE_I = 0;
-int THROTTLE_D = 0;
+int THROTTLE_P = 5;
+int THROTTLE_I = 1;
+int THROTTLE_D = 2;
 
 // CVT Guard
 int CVT_GUARD_THRESH = 100;
@@ -81,6 +86,13 @@ volatile int THROTTLE_SPEED = 0;
 // String output
 char DATA_BUFFER[DATA_SIZE];
 char OUTPUT_BUFFER[OUTPUT_SIZE];
+ 
+// Throttle PID Controller
+double throttle_set, throttle_in, throttle_out;
+PID throttle_pid(&throttle_in, &throttle_out, &throttle_set, 2, 5, 1, DIRECT);
+
+// Brake Motor Controller
+DualVNH5019MotorShield brakes;
 
 /* --- SETUP --- */
 void setup() {
@@ -110,23 +122,34 @@ void setup() {
   pinMode(LEFT_BRAKE_PIN, INPUT);
   pinMode(CVT_GUARD_PIN, INPUT);
   
+  // Analog Output
+  pinMode(THROTTLE_PWM_PIN, OUTPUT);
+  
   // Interrupts
   attachInterrupt(THROTTLE_UP_INT, count_throttle_up, RISING);
   attachInterrupt(THROTTLE_DOWN_INT, count_throttle_down, RISING);
+  
+  // Brake Motors
+  brakes.init();
 }
 
 /* --- LOOP --- */
 void loop() {
   
   // Digital Input
-  SEAT_KILL = digitalRead(SEAT_KILL_PIN);
-  HITCH_KILL = digitalRead(HITCH_KILL_PIN);
+  SEAT_KILL = check_seat();
+  HITCH_KILL = check_hitch();
   IGNITION = check_ignition();
   
   // Analog Input
   CVT_GUARD = check_guard();
   RIGHT_BRAKE = check_left_brake();
   LEFT_BRAKE = check_right_brake();
+  
+  // Set Throttle
+  set_throttle();
+  set_left_brake();
+  set_right_brake();
   
   // USB
   sprintf(DATA_BUFFER, "{gnd_relay:%d,reg_relay:%d,starter_relay:%d,right_brake:%d,left_brake:%d,cvt_guard:%d,seat:%d,hitch:%d,ignition:%d}", GND_RELAY, REG_RELAY, START_RELAY, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, SEAT_KILL, HITCH_KILL, IGNITION);
@@ -135,6 +158,46 @@ void loop() {
 }
 
 /* --- SYNCHRONOUS TASKS --- */
+// Set Throttle
+void set_throttle(void) {
+  analogWrite(THROTTLE_PWM_PIN, THROTTLE_SPEED);
+}
+
+// Right Brake
+void set_right_brake(void) {
+  int val = analogRead(RIGHT_BRAKE_PIN);
+  if (brakes.getM2CurrentMilliamps() >  BRAKES_MILLIAMP_THRESH) {
+    brakes.setM2Speed(0);
+  }
+  else {
+    int output = map(BRAKES_VMIN, BRAKES_VMAX, 0, 400, val);
+    brakes.setM2Speed(output);
+  }
+}
+
+// Left brake
+void set_left_brake(void) {
+  int val = analogRead(LEFT_BRAKE_PIN);
+  if (brakes.getM2CurrentMilliamps() > BRAKES_MILLIAMP_THRESH) {
+    brakes.setM2Speed(0);
+  }
+  else {
+    int output = map(BRAKES_VMIN, BRAKES_VMAX, 0, 400, val);
+    brakes.setM2Speed(output);
+  }
+}
+
+// Check RFID
+boolean check_rfid(void) {
+  Serial3.write(RFID_READ);
+  if (Serial3.read() >= 0) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
 // Checksum
 int checksum() {
   int sum = 0;
@@ -147,8 +210,8 @@ int checksum() {
 
 // Check Right Brake
 int check_right_brake(void) {
-  if  (analogRead(RIGHT_BRAKE_PIN) >= BRAKES_THRESH) {
-    if (analogRead(RIGHT_BRAKE_PIN) >= BRAKES_THRESH) {
+  if  (analogRead(RIGHT_BRAKE_PIN) >= BRAKES_VTHRESH) {
+    if (analogRead(RIGHT_BRAKE_PIN) >= BRAKES_VTHRESH) {
       return true;
     }
     else {
@@ -162,8 +225,8 @@ int check_right_brake(void) {
 
 // Check Left Brake
 boolean check_left_brake(void) {
-  if  (analogRead(LEFT_BRAKE_PIN) >= BRAKES_THRESH) {
-    if (analogRead(LEFT_BRAKE_PIN) >= BRAKES_THRESH) {
+  if  (analogRead(LEFT_BRAKE_PIN) >= BRAKES_VTHRESH) {
+    if (analogRead(LEFT_BRAKE_PIN) >= BRAKES_VTHRESH) {
       return true;
     }
     else {
