@@ -65,3 +65,14 @@ class SafeMode:
                 self.master.update_idletasks()
             except KeyError as error:
                 pretty_print('DISP_ERR', "label '%s' does not exist" % name)
+
+if __name__ == '__main__':
+    with open('config/HUD_debug.json', 'r') as jsonfile:
+        config = json.loads(jsonfile.read()) # Load settings file
+    display = SafeMode(config)
+    while True:
+        try:
+            e = {'mcu': 'TCS', 'w_eng': 3600 } 
+            display.update_labels(e)
+        except KeyboardInterrupt:
+            break

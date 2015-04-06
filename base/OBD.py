@@ -30,30 +30,24 @@ class WatchDog:
     ## Init
     def __init__(self, config):
         self.config = config
-        self.init_mq()
+        self.init_cmq()
         self.init_db()
         self.init_logging()
         
     def __close__(self):
         thread.exit()
     
-    ## Run
-    def run(self):
-        cherrypy.server.socket_host = self.config['CHERRYPY_ADDR']
-        cherrypy.server.socket_port = self.config['CHERRYPY_PORT']
-        currdir = os.path.dirname(os.path.abspath(__file__))
-        conf = {
-            '/' : {'tools.staticdir.on':True, 'tools.staticdir.dir':os.path.join(currdir,'static')},
-            '/data' : {'tools.staticdir.on':True, 'tools.staticdir.dir':os.path.join(currdir,'data')}, # NEED the '/' before the folder name
-        }
-        cherrypy.quickstart(self, '/', config=conf)
-    
     ## Initialize Messenger Query
-    def init_mq(self):
-        Monitor(cherrypy.engine, self.listen, frequency=self.config['ZMQ_FREQ']).subscribe()
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.REP)
-        self.socket.bind(self.config['ZMQ_SERVER'])
+    def init_cmq(self):
+        try:
+            Monitor(cherrypy.engine, self.listen, frequency=0.01).subscribe()
+            pretty_print('OBD', 'Initialized ZMQ listener')
+            self.context = zmq.Context()
+            self.socket = self.context.socket(zmq.REP)
+            self.socket.bind(self.config['CMQ_SERVER'])
+            pretty_print('OBD', 'Initialized ZMQ host')
+        except Exception as error:
+            pretty_print('OBD_ERR', str(error))
         
     ## Initialize DB
     def init_db(self):
@@ -61,10 +55,11 @@ class WatchDog:
             addr = self.config['MONGO_ADDR']
             port = self.config['MONGO_PORT']
             self.mongo_client = pymongo.MongoClient(addr, port)
-            event = self.make_event('DB_OK', 'Initialized DB on %s:%d' % (addr, port))
-            self.add_log_entry(event)
+            self.db_name = datetime.strftime(datetime.now(), '%Y%m%d')
+            self.db = self.mongo_client[self.db_name]
+            pretty_print('OBD', 'Initialized DB on %s:%d' % (addr, port))
         except Exception as error:
-            self.add_log_entry(self.make_event('ODB_ERR', str(error)))
+            pretty_print('OBD_ERR', str(error))
 
     ## Initialize Logging
     def init_logging(self):
@@ -72,46 +67,47 @@ class WatchDog:
             self.log_path = os.path.join(os.getcwd(), 'log', datetime.strftime(datetime.now(), self.config['LOG_FILE']))
             logging.basicConfig(filename=self.log_path, level=logging.DEBUG)
         except Exception as error:
-            self.add_log_entry(self.make_event('OBD_ERR', str(error)))
-    
+            pretty_print('OBD_ERR', str(error))
+   
     ## Make Event
-    def make_event(self, task, msg):
+    def make_event(self, task, data):
         e = {
             'type' : task,
-            'msg' : msg
+            'data' : data,
+            'time' : datetime.now()
         }
         return e
         
     ## Add Log Entry
     def add_log_entry(self, event):
-        task = event['type']
-        msg = event['msg'] #!
-        event['time'] = datetime.strftime(datetime.now(), '%Y/%m/%s %H:%M:%S.f')
-        date = datetime.strftime(datetime.now(), '%d/%b/%Y:%H:%M:%S')
-        db_name = datetime.strftime(datetime.now(), '%Y%m%d')
-        db = self.mongo_client[db_name]
-        uuid = db[task].insert(event)
-        pretty_print(task, msg)
+        try:
+            task = event['type']
+            uuid = self.db[task].insert(event)
+            pretty_print(task, str(uuid))
+        except Exception as error:
+            pretty_print('OBD ERR', str(error))
     
     ## Listen for Messages
     #! TODO Include setting warnings for the debugger page
     def listen(self):
         try:
             # Receive message from CAN
+            pretty_print('OBD', 'Listening')
             packet = self.socket.recv()
-            message = json.loads(packet)
-            pretty_print('OBD', str(message))
+            event = json.loads(packet)
+            pretty_print('OBD', str(event))
             
             # TODO: Handle data or errors
+            self.add_log_entry(event)
             
             # Send response to CAN
             response = {
-                'type' : 'response'
+                'type' : 'response',
+                'data' : ''
                 }
             dump = json.dumps(response)
             self.socket.send(dump)
             pretty_print('OBD', str(response))
-            
         except Exception as error:
             pretty_print('OBD_ERR', str(error))
     
@@ -132,5 +128,18 @@ class WatchDog:
             #! Handle requests, such as for logs of pulls
             pass
         except Exception as error:
-            self.add_log_entry(self.make_event('ERROR', str(error)))
+            pretty_print('OBD', str(error))
         return None
+
+if __name__ == '__main__':
+    with open('config/OBD_v1.json', 'r') as jsonfile:
+        config = json.loads(jsonfile.read()) # Load config file 
+    daemon = WatchDog(config) # start watchdog
+    cherrypy.server.socket_host = daemon.config['CHERRYPY_ADDR']
+    cherrypy.server.socket_port = daemon.config['CHERRYPY_PORT']
+    currdir = os.path.dirname(os.path.abspath(__file__))
+    conf = {
+        '/' : {'tools.staticdir.on':True, 'tools.staticdir.dir':os.path.join(currdir,'static')},
+        '/data' : {'tools.staticdir.on':True, 'tools.staticdir.dir':os.path.join(currdir,'data')}, # NEED the '/' before the folder name
+    }
+    cherrypy.quickstart(daemon, '/', config=conf)

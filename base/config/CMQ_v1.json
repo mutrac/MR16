@@ -5,14 +5,14 @@
         "baud" : 9600,
         "timeout" : 0.1,
         "rules" : []
-    }
+    },
     {
         "name" : "/dev/ttyACM1",
         "uid" : "TCS",
         "baud" : 9600,
         "timeout" : 0.1,
         "rules" : []
-    }
+    },
     {
         "name" : "/dev/ttyACM2",
         "uid" : "VDC",

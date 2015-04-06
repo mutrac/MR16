@@ -7,6 +7,6 @@
     "LOG_FILE" : "%Y%m%d.log",
     "DATE_FORMAT" : "%d/%b/%Y:%H:%M:%S",
     "LOG_FORMAT" : "[%s] %s %s",
-    "ZMQ_SERVER" : "tcp://*:1980",
-    "ZMQ_FREQ" : 0.001
+    "CMQ_SERVER" : "tcp://*:1980",
+    "CMQ_FREQ" : 0.001
 }

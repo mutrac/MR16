@@ -14,16 +14,6 @@ from OBD import WatchDog
 from V6 import V6
 import json
 
-def test_CMQ():
-    mimo = MIMO() # Start the serial network
-    cmq = CMQ(mimo) # Start the MQ client
-    try:
-        cmq.run()
-    except KeyboardInterrupt:
-        pass
-    except Exception as error:
-        pretty_print('ERROR', str(error))
-
 def test_HUD():
     with open('config/HUD_debug.json', 'r') as jsonfile:
         config = json.loads(jsonfile.read()) # Load settings file
@@ -35,9 +25,16 @@ def test_HUD():
         except KeyboardInterrupt:
             break
             
-def test_OBD():
+def test_CMQ():
+    with open('config/CMQ_v1.json', 'r') as jsonfile:
+        config = json.loads(jsonfile.read()) # Load settings file
+        mimo = MIMO(config) # Start the serial network
+        cmq = CMQ(mimo) # Start the MQ client
+
+def test_OBD():   
     with open('config/OBD_v1.json', 'r') as jsonfile:
         config = json.loads(jsonfile.read()) # Load config file
+    
     daemon = WatchDog(config) # start watchdog
     daemon.run()
 
@@ -48,7 +45,7 @@ def test_V6():
     cam.speed()
 
 if __name__ == '__main__':
-    test_OBD() # OBD needs to run before CMQ to receive notifications
     test_CMQ()
-    #test_HUD()
-    #test_V6()
+    test_OBD() # OBD needs to run before CMQ to receive notifications
+    test_HUD()
+    test_V6()

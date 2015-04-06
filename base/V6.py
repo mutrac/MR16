@@ -157,9 +157,17 @@ class V6:
         return np.mean(results)
 
 if __name__ == '__main__':
+
+    # Test
     test = V6(capture='tests/grass_2kmh_25fps.avi')
     try:
         while True:
             print test.speed(display=True)
     except KeyboardInterrupt:
         test.close()
+    
+    # Run as daemon   
+    with open('config/v6_v1.json', 'r') as jsonfile:
+        config = json.loads(jsonfile.read()) # Load config file
+        cam = V6(config) # start watchdog
+        cam.speed()
