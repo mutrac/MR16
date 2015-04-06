@@ -8,14 +8,15 @@
 #include "DallasTemperature.h"
 #include "OneWire.h"
 #include <PID_v1.h>
-#define RFID_READ 0x02
 
 /* --- GLOBAL CONSTANTS --- */
 // CAN
 const char UID[] = "ESC";
 const int BAUD = 9600;
+const int RFID_BAUD = 9600;
 const int OUTPUT_SIZE = 256;
 const int DATA_SIZE = 128;
+const int RFID_READ = 0x02;
 
 // Failsafe Digital Input
 const int SEAT_KILL_PIN = 21;
@@ -76,13 +77,13 @@ int THROTTLE_D = 2;
 int CVT_GUARD_THRESH = 100;
 
 // Peripheral values
-int SEAT_KILL = 0;
-int HITCH_KILL = 0;
-int IGNITION = 0;
+boolean SEAT_KILL = 0;
+boolean HITCH_KILL = 0;
+boolean TRIGGER_KILL = 0;
+boolean BUTTON_KILL = 0;
+boolean IGNITION = 0;
 int CVT_GUARD = 0;
-int STOP_RELAY = 0;
-int REG_RELAY = 0;
-int START_RELAY = 0;
+int RUN_MODE = 0;
 int LEFT_BRAKE = 0;
 int RIGHT_BRAKE = 0;
 int RFID_AUTH = 0;
@@ -102,7 +103,11 @@ DualVNH5019MotorShield brakes;
 /* --- SETUP --- */
 void setup() {
   
+  // Serial
   Serial.begin(BAUD);
+  Serial3.begin(RFID_BAUD); // Pins 14 and 15
+  Serial3.write(RFID_READ);
+  
   
   // Failsafe Digital Input
   pinMode(SEAT_KILL_PIN, INPUT);
@@ -141,23 +146,54 @@ void setup() {
 /* --- LOOP --- */
 void loop() {
   
-  // Digital Input
+  // Get Inputs Always
   SEAT_KILL = check_seat();
   HITCH_KILL = check_hitch();
+  BUTTON_KILL = check_button();
+  TRIGGER_KILL = check_trigger();
   IGNITION = check_ignition();
-  
-  // Analog Input
   CVT_GUARD = check_guard();
-  RIGHT_BRAKE = check_left_brake();
-  LEFT_BRAKE = check_right_brake();
+  RFID_AUTH = check_rfid();
   
-  // Set Throttle
-  set_throttle();
-  set_left_brake();
-  set_right_brake();
+  // Set Brakes Always
+  LEFT_BRAKE = set_left_brake();
+  RIGHT_BRAKE = set_right_brake();
+  
+  // If OFF
+  if (RUN_MODE == 0) {
+    if (RFID_AUTH) {
+      standby();
+    }
+  }
+  // If STANDBY
+  else if (RUN_MODE == 1) {
+    if (SEAT_KILL || HITCH_KILL || BUTTON_KILL || TRIGGER_KILL) {
+      kill(); // kill engine
+    }
+    else if (IGNITION && !LEFT_BRAKE && !RIGHT_BRAKE && !CVT_GUARD) {
+      ignition(); // execute ignition sequence
+    }
+    else {
+      standby(); // remain in standby (RUN_MODE 1)
+    }
+  }
+  // If DRIVE
+  else if (RUN_MODE == 2) {
+    if (SEAT_KILL || HITCH_KILL || BUTTON_KILL || TRIGGER_KILL) {
+      kill(); // kill engine
+      standby();
+    }
+    else {
+      set_throttle();
+    }
+  }
+  // If in State ? (UNKNOWN)
+  else {
+    kill();
+  }
   
   // USB
-  sprintf(DATA_BUFFER, "{stop_relay:%d,reg_relay:%d,starter_relay:%d,right_brake:%d,left_brake:%d,cvt_guard:%d,seat:%d,hitch:%d,ignition:%d}", STOP_RELAY, REG_RELAY, START_RELAY, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, SEAT_KILL, HITCH_KILL, IGNITION);
+  sprintf(DATA_BUFFER, "{'run_mode':%d,'right_brake':%d,'left_brake':%d,'cvt_guard':%d,'seat':%d,'hitch':%d,'ignition':%d}", RUN_MODE, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, SEAT_KILL, HITCH_KILL, IGNITION);
   sprintf(OUTPUT_BUFFER, "{'uid':%s,'data':%s,'chksum':%d}", UID, DATA_BUFFER, checksum());
   Serial.println(OUTPUT_BUFFER);
 }
@@ -169,26 +205,48 @@ void set_throttle(void) {
 }
 
 // Right Brake
-void set_right_brake(void) {
+// Returns true if the brake interlock is engaged
+boolean set_right_brake(void) {
   int val = analogRead(RIGHT_BRAKE_PIN); // read right brake signal
+  int output = map(BRAKES_VMIN, BRAKES_VMAX, 0, 400, val);  // map the brakes power output to 0-400
+   
+  // Engage brake motor
   if (brakes.getM2CurrentMilliamps() >  BRAKES_MILLIAMP_THRESH) {
     brakes.setM2Speed(0); // disable breaks if over-amp
   }
   else {
-    int output = map(BRAKES_VMIN, BRAKES_VMAX, 0, 400, val); // map the brakes power output to 0-400
     brakes.setM2Speed(output);
+  }
+  
+  // Check interlock
+  if  (val >= BRAKES_VTHRESH) {
+    return true;
+  }
+  else {
+    return false;
   }
 }
 
 // Left brake
-void set_left_brake(void) {
+// Returns true if the brake interlock is engaged
+boolean set_left_brake(void) {
   int val = analogRead(LEFT_BRAKE_PIN); // read left brake signal
+  int output = map(BRAKES_VMIN, BRAKES_VMAX, 0, 400, val); // linearly map the brakes power output to 0-400
+  
+  // Engage brake motor
   if (brakes.getM2CurrentMilliamps() > BRAKES_MILLIAMP_THRESH) {
     brakes.setM2Speed(0); // disable breaks if over-amp
   }
   else {
-    int output = map(BRAKES_VMIN, BRAKES_VMAX, 0, 400, val); // map the brakes power output to 0-400
     brakes.setM2Speed(output);
+  }
+  
+  // Check interlock
+  if  (val >= BRAKES_VTHRESH) {
+    return true;
+  }
+  else {
+    return false;
   }
 }
 
@@ -211,36 +269,6 @@ int checksum() {
   }
   int val = sum % 256;
   return val;
-}
-
-// Check Right Brake
-int check_right_brake(void) {
-  if  (analogRead(RIGHT_BRAKE_PIN) >= BRAKES_VTHRESH) {
-    if (analogRead(RIGHT_BRAKE_PIN) >= BRAKES_VTHRESH) {
-      return true;
-    }
-    else {
-      return false;
-    }
-  }
-  else {
-    return false;
-  }
-}
-
-// Check Left Brake
-boolean check_left_brake(void) {
-  if  (analogRead(LEFT_BRAKE_PIN) >= BRAKES_VTHRESH) {
-    if (analogRead(LEFT_BRAKE_PIN) >= BRAKES_VTHRESH) {
-      return true;
-    }
-    else {
-      return false;
-    }
-  }
-  else {
-    return false;
-  }
 }
 
 // Check Ignition
@@ -277,6 +305,21 @@ boolean check_guard(void) {
 boolean check_seat(void) {
   if (digitalRead(SEAT_KILL_PIN)) {
     if (digitalRead(SEAT_KILL_PIN)) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  else {
+    return false;
+  }
+}
+
+// Check Trigger
+boolean check_trigger(void) {
+  if (digitalRead(TRIGGER_KILL_PIN)) {
+    if (digitalRead(TRIGGER_KILL_PIN)) {
       return true;
     }
     else {
@@ -326,6 +369,7 @@ void kill(void) {
   digitalWrite(STARTER_RELAY_PIN, HIGH);
   digitalWrite(REGULATOR_RELAY_PIN, HIGH);
   delay(KILL_WAIT);
+  RUN_MODE = 0;
 }
 
 // Standby
@@ -336,6 +380,7 @@ void standby(void) {
   digitalWrite(REGULATOR_RELAY_PIN, LOW);
   digitalWrite(STARTER_RELAY_PIN, HIGH);
   delay(STANDBY_WAIT);
+  RUN_MODE = 1;
 }
 
 // Ignition
@@ -353,6 +398,7 @@ void ignition(void) {
   digitalWrite(REGULATOR_RELAY_PIN, LOW);
   digitalWrite(STARTER_RELAY_PIN, HIGH);
   delay(STANDBY_WAIT);
+  RUN_MODE = 2;
 }
 
 /* --- ASYNCHRONOUS TASKS --- */
