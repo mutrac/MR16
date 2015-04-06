@@ -1,3 +1,5 @@
 *~
 *.pyc
 *.log
+base/data/*.csv
+base/data/*.json
