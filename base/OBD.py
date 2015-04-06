@@ -30,6 +30,7 @@ class WatchDog:
     ## Init
     def __init__(self, config):
         self.config = config
+        self.data = {}
         self.init_cmq()
         self.init_db()
         self.init_logging()
@@ -95,21 +96,29 @@ class WatchDog:
             pretty_print('OBD', 'Listening')
             packet = self.socket.recv()
             event = json.loads(packet)
-            pretty_print('OBD', str(event))
+            pretty_print('OBD', 'RECEIVED: %s' % str(event))
             
             # TODO: Handle data or errors
             self.add_log_entry(event)
             
             # Send response to CAN
-            response = {
-                'type' : 'response',
-                'data' : ''
+            if event['type'] == 'HUD':
+                response = {
+                    'type' : 'OBD',
+                    'data' : self.data
+                }
+            elif event['type'] == 'CMQ':
+                # TODO Set incoming data to the global "data" object
+                self.data.update(event['data'])
+                response = {
+                    'type' : 'OBD',
+                    'data' : {}
                 }
             dump = json.dumps(response)
             self.socket.send(dump)
             pretty_print('OBD', str(response))
         except Exception as error:
-            pretty_print('OBD_ERR', str(error))
+            pretty_print('OBD', str(error))
     
     """
     Handler Functions

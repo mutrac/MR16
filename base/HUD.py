@@ -9,6 +9,7 @@ __version__ = 0.1
 # Dependencies
 import Tkinter as tk
 from datetime import datetime 
+import zmq
 import time
 import json
 import random
@@ -21,8 +22,15 @@ def pretty_print(task, msg):
 # Classes (Note: class names should be capitalized)
 class SafeMode: 
 
-    def __init__(self, config):
+    def __init__(self, config, addr="tcp://127.0.0.1:1980", timeout=0.1):
         pretty_print('DISP_INIT', 'Setting Layout')
+        self.addr = addr
+        self.timeout = timeout
+        self.zmq_context = zmq.Context()
+        self.zmq_client = self.zmq_context.socket(zmq.REQ)
+        self.zmq_client.connect(self.addr)
+        self.zmq_poller = zmq.Poller()
+        self.zmq_poller.register(self.zmq_client, zmq.POLLIN)
         self.master = tk.Tk()
         self.master.config(background = config['bg'])
         self._geom = config['geometry']
@@ -55,16 +63,45 @@ class SafeMode:
     def list_labels(self):
         return [n for n in self.labels]
    
-    def update_labels(self, event):
-        pretty_print('DISP', 'Updating Labels')
+    # Generate event/error
+    def generate_event(self, task, data):
+        pretty_print(task, data)
+        event = {
+            'type' : task,
+            'data' : data,
+            'time': datetime.strftime(datetime.now(), "%H:%M:%S.%f"),
+        }
+        return event
+        
+    def update_labels(self):
+        request = {
+            'type' : 'HUD',
+            'data' : {}
+        }
+        dump = json.dumps(request)
+        self.zmq_client.send(dump)
+        time.sleep(self.timeout)
+        socks = dict(self.zmq_poller.poll(self.timeout))
+        if socks:
+            if socks.get(self.zmq_client) == zmq.POLLIN:
+                dump = self.zmq_client.recv(zmq.NOBLOCK) # zmq.NOBLOCK
+                event = json.loads(dump)
+                self.generate_event('CMQ', 'RECEIVED: %s' % str(event))
+            else:
+                self.generate_event('CMQ', 'ERROR: Poller Timeout')
+        else:
+            self.generate_event('CMQ', 'ERROR: Socket Timeout')
+            
+        pretty_print('DISP', 'Updating Labels %s' % str(event['data']))
         event['time'] = time.time()#! the event should determine which labels are changed
-        for name in event.keys():
+        data = event['data']
+        for name in data.keys():
             try:
-                label_txt = self.label_formats[name] % event[name]
+                label_txt = data[name]
                 self.labels[name].set(label_txt)
                 self.master.update_idletasks()
             except KeyError as error:
-                pretty_print('DISP_ERR', "label '%s' does not exist" % name)
+                pretty_print('DISP', "label '%s' does not exist" % name)
 
 if __name__ == '__main__':
     with open('config/HUD_debug.json', 'r') as jsonfile:
@@ -72,7 +109,6 @@ if __name__ == '__main__':
     display = SafeMode(config)
     while True:
         try:
-            e = {'mcu': 'TCS', 'w_eng': 3600 } 
-            display.update_labels(e)
+            display.update_labels()
         except KeyboardInterrupt:
             break
