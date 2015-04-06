@@ -26,8 +26,8 @@ const int BUTTON_KILL_PIN = 25;
 const int BUTTON_KILL_PWR = 26;
 
 // Joystick (Digital) 
-// Note: in this revision, the joystick gives input to multiple controllers
-const int TRIGGER_KILL_PIN = 27;
+// Note 1: in this revision, the joystick gives input to multiple controllers
+const int TRIGGER_KILL_PIN = 30;
 const int PULL_PIN = 31;
 const int DBS_PIN = 32;
 const int IGNITION_PIN = 33;
@@ -38,7 +38,7 @@ const int THROTTLE_UP_INT = 14; // These are set to an interrupt
 const int THROTTLE_DOWN_INT = 15; // These are set to an interrupt
 
 // Relays
-const int GROUND_RELAY_PIN = 35;
+const int STOP_RELAY_PIN = 35;
 const int REGULATOR_RELAY_PIN = 36;
 const int STARTER_RELAY_PIN = 37;
 const int ATOM_RELAY_PIN = 38;
@@ -52,6 +52,11 @@ const int CVT_GUARD_PIN = A4;
 
 // Analog Output (PWM)
 const int THROTTLE_PWM_PIN = 2;
+
+// Time Delays
+const int KILL_WAIT = 1000;
+const int IGNITION_WAIT = 1000;
+const int STANDBY_WAIT = 1000;
 
 /* --- GLOBAL VARIABLES --- */
 // Brakes
@@ -75,7 +80,7 @@ int SEAT_KILL = 0;
 int HITCH_KILL = 0;
 int IGNITION = 0;
 int CVT_GUARD = 0;
-int GND_RELAY = 0;
+int STOP_RELAY = 0;
 int REG_RELAY = 0;
 int START_RELAY = 0;
 int LEFT_BRAKE = 0;
@@ -112,7 +117,7 @@ void setup() {
   pinMode(IGNITION_PIN, INPUT);
 
   // Relays
-  pinMode(GROUND_RELAY_PIN, OUTPUT);
+  pinMode(STOP_RELAY_PIN, OUTPUT);
   pinMode(REGULATOR_RELAY_PIN, OUTPUT);
   pinMode(STARTER_RELAY_PIN, OUTPUT);
   pinMode(ATOM_RELAY_PIN, OUTPUT);
@@ -152,7 +157,7 @@ void loop() {
   set_right_brake();
   
   // USB
-  sprintf(DATA_BUFFER, "{gnd_relay:%d,reg_relay:%d,starter_relay:%d,right_brake:%d,left_brake:%d,cvt_guard:%d,seat:%d,hitch:%d,ignition:%d}", GND_RELAY, REG_RELAY, START_RELAY, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, SEAT_KILL, HITCH_KILL, IGNITION);
+  sprintf(DATA_BUFFER, "{stop_relay:%d,reg_relay:%d,starter_relay:%d,right_brake:%d,left_brake:%d,cvt_guard:%d,seat:%d,hitch:%d,ignition:%d}", STOP_RELAY, REG_RELAY, START_RELAY, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, SEAT_KILL, HITCH_KILL, IGNITION);
   sprintf(OUTPUT_BUFFER, "{'uid':%s,'data':%s,'chksum':%d}", UID, DATA_BUFFER, checksum());
   Serial.println(OUTPUT_BUFFER);
 }
@@ -165,24 +170,24 @@ void set_throttle(void) {
 
 // Right Brake
 void set_right_brake(void) {
-  int val = analogRead(RIGHT_BRAKE_PIN);
+  int val = analogRead(RIGHT_BRAKE_PIN); // read right brake signal
   if (brakes.getM2CurrentMilliamps() >  BRAKES_MILLIAMP_THRESH) {
-    brakes.setM2Speed(0);
+    brakes.setM2Speed(0); // disable breaks if over-amp
   }
   else {
-    int output = map(BRAKES_VMIN, BRAKES_VMAX, 0, 400, val);
+    int output = map(BRAKES_VMIN, BRAKES_VMAX, 0, 400, val); // map the brakes power output to 0-400
     brakes.setM2Speed(output);
   }
 }
 
 // Left brake
 void set_left_brake(void) {
-  int val = analogRead(LEFT_BRAKE_PIN);
+  int val = analogRead(LEFT_BRAKE_PIN); // read left brake signal
   if (brakes.getM2CurrentMilliamps() > BRAKES_MILLIAMP_THRESH) {
-    brakes.setM2Speed(0);
+    brakes.setM2Speed(0); // disable breaks if over-amp
   }
   else {
-    int output = map(BRAKES_VMIN, BRAKES_VMAX, 0, 400, val);
+    int output = map(BRAKES_VMIN, BRAKES_VMAX, 0, 400, val); // map the brakes power output to 0-400
     brakes.setM2Speed(output);
   }
 }
@@ -311,6 +316,43 @@ boolean check_button(void) {
   else {
     return false;
   }
+}
+
+// Kill
+void kill(void) {
+  brakes.setM1Speed(0);
+  brakes.setM2Speed(0);
+  digitalWrite(STOP_RELAY_PIN, HIGH);
+  digitalWrite(STARTER_RELAY_PIN, HIGH);
+  digitalWrite(REGULATOR_RELAY_PIN, HIGH);
+  delay(KILL_WAIT);
+}
+
+// Standby
+void standby(void) {
+  brakes.setM1Speed(0);
+  brakes.setM2Speed(0);
+  digitalWrite(STOP_RELAY_PIN, LOW);
+  digitalWrite(REGULATOR_RELAY_PIN, LOW);
+  digitalWrite(STARTER_RELAY_PIN, HIGH);
+  delay(STANDBY_WAIT);
+}
+
+// Ignition
+void ignition(void) {
+  Serial.println('ignition');
+  brakes.setM1Speed(0);
+  brakes.setM2Speed(0);
+  while (check_ignition()) {
+    digitalWrite(STOP_RELAY_PIN, LOW);
+    digitalWrite(REGULATOR_RELAY_PIN, LOW);
+    digitalWrite(STARTER_RELAY_PIN, LOW);
+    delay(IGNITION_WAIT);
+  }
+  digitalWrite(STOP_RELAY_PIN, LOW);
+  digitalWrite(REGULATOR_RELAY_PIN, LOW);
+  digitalWrite(STARTER_RELAY_PIN, HIGH);
+  delay(STANDBY_WAIT);
 }
 
 /* --- ASYNCHRONOUS TASKS --- */
