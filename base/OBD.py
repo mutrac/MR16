@@ -19,14 +19,14 @@ from datetime import datetime
 import thread
 import json
 
-# Useful Functions 
-def pretty_print(task, msg):
-    date = datetime.strftime(datetime.now(), '[%d/%b/%Y:%H:%M:%S]')
-    print("%s %s %s" % (date, task, msg))
-
 # Classes
 class WatchDog:
 
+    # Useful Functions 
+    def pretty_print(self, task, msg):
+        date = datetime.strftime(datetime.now(), '[%d/%b/%Y:%H:%M:%S]')
+        print("%s %s %s" % (date, task, msg))
+        
     ## Init
     def __init__(self, config):
         self.config = config
@@ -42,13 +42,13 @@ class WatchDog:
     def init_cmq(self):
         try:
             Monitor(cherrypy.engine, self.listen, frequency=0.01).subscribe()
-            pretty_print('OBD', 'Initialized ZMQ listener')
+            self.pretty_print('OBD', 'Initialized ZMQ listener')
             self.context = zmq.Context()
             self.socket = self.context.socket(zmq.REP)
             self.socket.bind(self.config['CMQ_SERVER'])
-            pretty_print('OBD', 'Initialized ZMQ host')
+            self.pretty_print('OBD', 'Initialized ZMQ host')
         except Exception as error:
-            pretty_print('OBD_ERR', str(error))
+            self.pretty_print('OBD_ERR', str(error))
         
     ## Initialize DB
     def init_db(self):
@@ -58,9 +58,9 @@ class WatchDog:
             self.mongo_client = pymongo.MongoClient(addr, port)
             self.db_name = datetime.strftime(datetime.now(), '%Y%m%d')
             self.db = self.mongo_client[self.db_name]
-            pretty_print('OBD', 'Initialized DB on %s:%d' % (addr, port))
+            self.pretty_print('OBD', 'Initialized DB on %s:%d' % (addr, port))
         except Exception as error:
-            pretty_print('OBD_ERR', str(error))
+            self.pretty_print('OBD_ERR', str(error))
 
     ## Initialize Logging
     def init_logging(self):
@@ -68,7 +68,7 @@ class WatchDog:
             self.log_path = os.path.join(os.getcwd(), 'log', datetime.strftime(datetime.now(), self.config['LOG_FILE']))
             logging.basicConfig(filename=self.log_path, level=logging.DEBUG)
         except Exception as error:
-            pretty_print('OBD_ERR', str(error))
+            self.pretty_print('OBD_ERR', str(error))
    
     ## Make Event
     def make_event(self, task, data):
@@ -84,19 +84,19 @@ class WatchDog:
         try:
             task = event['type']
             uuid = self.db[task].insert(event)
-            pretty_print(task, str(uuid))
+            self.pretty_print(task, str(uuid))
         except Exception as error:
-            pretty_print('OBD ERR', str(error))
+            self.pretty_print('OBD ERR', str(error))
     
     ## Listen for Messages
     #! TODO Include setting warnings for the debugger page
     def listen(self):
         try:
             # Receive message from CAN
-            pretty_print('OBD', 'Listening')
+            self.pretty_print('OBD', 'Listening')
             packet = self.socket.recv()
             event = json.loads(packet)
-            pretty_print('OBD', 'RECEIVED: %s' % str(event))
+            self.pretty_print('OBD', 'RECEIVED: %s' % str(event))
             
             # TODO: Handle data or errors
             self.add_log_entry(event)
@@ -116,9 +116,9 @@ class WatchDog:
                 }
             dump = json.dumps(response)
             self.socket.send(dump)
-            pretty_print('OBD', str(response))
+            self.pretty_print('OBD', str(response))
         except Exception as error:
-            pretty_print('OBD', str(error))
+            self.pretty_print('OBD', str(error))
     
     """
     Handler Functions
@@ -137,7 +137,7 @@ class WatchDog:
             #! Handle requests, such as for logs of pulls
             pass
         except Exception as error:
-            pretty_print('OBD', str(error))
+            self.pretty_print('OBD', str(error))
         return None
 
 if __name__ == '__main__':
