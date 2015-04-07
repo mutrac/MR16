@@ -13,6 +13,7 @@ from datetime import datetime
 import json
 import time
 import thread
+from itertools import cycle
 
 # Useful Functions 
 def pretty_print(task, data):
@@ -78,7 +79,7 @@ class CMQ:
         pretty_print('CMQ', 'Controller List : %s' % self.list_controllers())
         
     # Add new controller to the network
-    # Checks to make sure PID is correct before inserting into controllers dict
+    # Checks to make sure UID is correct before inserting into controllers dict
     # TODO: handle errors
     def add_controller(self, dev, attempts=1):
         try:
@@ -90,16 +91,16 @@ class CMQ:
                     if string is not None:
                         try:    
                             data = ast.literal_eval(string)
-                            uid = data['id'] #TODO Confirm if this is the right key
+                            uid = data['uid'] #TODO Confirm if this is the right key
                         except Exception as e:
-                            raise KeyError('Failed to find valid ID')
+                            raise KeyError('Failed to find valid UID')
                         self.controllers[uid] = dev
                         self.generate_event('CMQ', "Adding %s is %s" % (dev.name, uid))
                 except Exception as e:
                     pretty_print('CMQ', 'Error: %s' % str(e))
             raise ValueError('All attempts failed when adding: %s' % dev.name)
         except Exception as error:
-            self.generate_event('CMQ', str(error))
+            pretty_print('CMQ', str(error))
         
     # Remove controller from the network by UID
     def remove_controller(self, uid):
@@ -108,14 +109,23 @@ class CMQ:
             port.close_all()
             del self.controllers[uid]
         except Exception as error:
-            self.generate_event('CMQ', str(error))
+            pretty_print('CMQ', str(error))
             raise error
     
     # Listen
     def listen(self, dev):
+    
+        ## Read and parse
         pretty_print('CMQ', 'Listening for %s' % dev.name)
         dump = dev.port.read(timeout=dev.timeout)
-        event = ast.literal_eval(dump)
+        if not dump:
+            return self.generate_event('CMQ', 'error', 'No data from %s' % dev.name)
+        event = ast.literal_eval(dump) #! TODO: check sum here?
+        if not self.checksum(event):
+            return self.generate_event('CMQ', 'error', '%s failed checksum' % dev.name)
+        event['task'] == 'control'
+        
+        ## Follow rule-base
         for (key, val, uid, msg) in dev.rules:
             if (event['uid'] == uid) and (event[key] == val): # TODO: might have to handle Unicode
                 try:
@@ -126,39 +136,57 @@ class CMQ:
                     pretty_print('CMQ', str(e))
         return event
         
-    # Listen All  
+    # Listen All 
     def listen_all(self):
         if self.controllers:
-            try:
-                events = [self.listen(c) for c in self.controllers]
-                return events
-            except Exception as error:
-                return [self.generate_event("CMQ", str(error))]
+            events = []
+            for c in self.controllers:
+                try:
+                    e = self.listen(c)
+                    events.append(e)
+                except Exception as error:
+                    events.append(self.generate_event("CMQ", 'error', str(error)))
+            return events
         else:
-            return [self.generate_event("CMQ", 'Empty Network')]
+            return [self.generate_event("CMQ", 'error', 'Empty Network!')]
     
     # List controllers
     def list_controllers(self):
         return self.controllers.keys()
         
     # Generate event/error
-    def generate_event(self, task, data):
-        pretty_print(task, data)
+    def generate_event(self, uid, task, data):
+        pretty_print(uid, data)
         event = {
-            'type' : task,
+            'uid' : uid,
+            'task' : task,
             'data' : data,
             'time': datetime.strftime(datetime.now(), "%H:%M:%S.%f"),
         }
         return event
+    
+    # Check sum
+    def checksum(self, event):
+        try:
+            data = event['data']
+            chksum = 0
+            for c in str(event['data']):
+                chksum += int(c) 
+            if event['checksum'] == (chksum % 256):
+                return True
+            else:
+                return False
+        except Exception as e:
+            pretty_print('CMQ', str(e))
         
-    # Run until a reset fails
+    # Run Indefinitely
     def run(self):
-        while True:
-            pretty_print('CMQ', 'Listening on all')
+        for n in cycle(range(4)):
+            pretty_print('CMQ', 'Listening on all (%d)' % n)
             events = self.listen_all()
             for e in events: # Read newest 
                 try:
-                    self.generate_event('CMQ', 'send: %s' % str(e))
+                    pretty_print('CMQ', 'Sent: %s' % str(e))
                     dump = json.dumps(e)
                     self.zmq_client.send(dump)
                     time.sleep(self.timeout)
@@ -167,13 +195,26 @@ class CMQ:
                         if socks.get(self.zmq_client) == zmq.POLLIN:
                             dump = self.zmq_client.recv(zmq.NOBLOCK) # zmq.NOBLOCK
                             response = json.loads(dump)
-                            event = self.generate_event('CMQ', 'recv: %s' % str(response))
+                            pretty_print('CMQ', 'Received: %s' % str(response))
+                            #! TODO handle response from the host
+                            if response['task'] == 'handler':
+                                pass
+                                """
+                                This is where you could put cool stuff like
+                                updating controllers, etc.
+                                """
+                            if response['task'] == 'status':
+                                pass
+                                """
+                                This is where you could handle different status
+                                related tasks.
+                                """
                         else:
-                            event = self.generate_event('CMQ', 'Poller Timeout')
+                            pretty_print('CMQ', 'Poller Timeout')
                     else:
-                        event = self.generate_event('CMQ', 'Socket Timeout')
+                        pretty_print('CMQ', 'Socket Timeout')
                 except Exception as error:
-                    event = self.generate_event('CMQ', str(error))
+                    pretty_print('CMQ', str(error))
     
     # Reset server socket connection
     def reset(self):

@@ -6,4 +6,4 @@
 cd ../base/
 python OBD.py &
 python CMQ.py &
-python HUD.py
+python HUD.py &

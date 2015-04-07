@@ -44,8 +44,10 @@ class SafeMode:
         self.labels = {} # dictionary of labels for display
         self.label_formats = {}
         for label in config['labels']:
-            self.create_label(label, config['labels'][label]) 
-        
+            self.create_label(label, config['labels'][label])
+        self.master.update_idletasks()
+    
+    # Create a new label
     def create_label(self, name, settings):
         pretty_print('NEW LABEL', '%s' % name)
         self.labels[name] = tk.StringVar()
@@ -59,15 +61,16 @@ class SafeMode:
         )
         label.pack()
         label.place(x=settings['x'], y=settings['y'])
-        
+    
+    # List all labels  
     def list_labels(self):
         return [n for n in self.labels]
    
     # Generate event/error
-    def generate_event(self, task, data):
-        pretty_print(task, data)
+    def generate_event(self, uid, task, data):
         event = {
-            'type' : task,
+            'uid' : 'HUD',
+            'task' : task,
             'data' : data,
             'time': datetime.strftime(datetime.now(), "%H:%M:%S.%f"),
         }
@@ -76,16 +79,15 @@ class SafeMode:
     # Update the label values
     def update_labels(self):
     
+        # Ping host to request data update
         try:
-            request = {
-                'type' : 'HUD',
-                'data' : {}
-            }
+            request = self.generate_event('HUD', 'request', {}) #! TODO add error creator component, currently only makes update requests
             dump = json.dumps(request)
             self.zmq_client.send(dump)
         except Exception as error:
             pretty_print('DISP', str(error))
-            
+        
+        # Wait for response and map values to labels
         try:
             time.sleep(self.timeout)
             socks = dict(self.zmq_poller.poll(self.timeout))
@@ -93,11 +95,11 @@ class SafeMode:
                 if socks.get(self.zmq_client) == zmq.POLLIN:
                     dump = self.zmq_client.recv(zmq.NOBLOCK) # zmq.NOBLOCK
                     event = json.loads(dump)
-                    self.generate_event('CMQ', 'RECEIVED: %s' % str(event))
+                    pretty_print('CMQ', 'RECEIVED: %s' % str(event))
                 else:
-                    self.generate_event('CMQ', 'ERROR: Poller Timeout')
+                    pretty_print('CMQ', 'ERROR: Poller Timeout')
             else:
-                self.generate_event('CMQ', 'ERROR: Socket Timeout')
+                pretty_print('CMQ', 'ERROR: Socket Timeout')
             pretty_print('DISP', 'Updating Labels %s' % str(event['data']))
             event['time'] = time.time() #! the event determines which labels are changed
             data = event['data']

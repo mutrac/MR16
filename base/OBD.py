@@ -70,52 +70,54 @@ class WatchDog:
         except Exception as error:
             self.pretty_print('OBD_ERR', str(error))
    
-    ## Make Event
-    def make_event(self, task, data):
+    ## Generate Event
+    def generate_event(self, uid, task, data):
         e = {
-            'type' : task,
+            'uid' : uid,
+            'task' : task,
             'data' : data,
-            'time' : datetime.now()
+            'time' : datetime.strftime(datetime.now(), "%H:%M:%S.%f"),
         }
         return e
         
     ## Add Log Entry
     def add_log_entry(self, event):
         try:
-            task = event['type']
+            task = event['task']
             uuid = self.db[task].insert(event)
-            self.pretty_print(task, str(uuid))
+            self.pretty_print('OBD', 'Stored to %s/%s' % (task, str(uuid)))
         except Exception as error:
-            self.pretty_print('OBD ERR', str(error))
+            self.pretty_print('OBD', str(error))
     
     ## Listen for Messages
     #! TODO Include setting warnings for the debugger page
     def listen(self):
         try:
             # Receive message from CAN
-            self.pretty_print('OBD', 'Listening')
+            self.pretty_print('OBD', 'Listening ...')
             packet = self.socket.recv()
             event = json.loads(packet)
-            self.pretty_print('OBD', 'RECEIVED: %s' % str(event))
+            self.pretty_print('OBD', 'Received: %s' % str(event))
             
-            # TODO: Handle data or errors
+            # Save to Database
             self.add_log_entry(event)
             
             # Send response to CAN
-            if event['type'] == 'HUD':
-                response = {
-                    'type' : 'OBD',
-                    'data' : self.data
-                }
-            elif event['type'] == 'CMQ':
-                # TODO Set incoming data to the global "data" object
-                self.data.update(event['data']) 
-                response = {
-                    'type' : 'OBD',
-                    'data' : {}
-                }
+            if event['uid'] == 'HUD':
+                #! TODO: Respond to ERRORS from the HUD (if any ...)
+                if event['task'] == 'error':
+                    response = self.generate_event('OBD', 'handler', {})
+                else:
+                    response = self.generate_event('OBD', 'update', self.data)
+            elif event['uid'] == 'CMQ':
+                #! TODO: Respond to ERRORS from the CMQ
+                if event['task'] == 'error': # check if ERROR
+                    response = self.generate_event('OBD', 'handler', {})
+                else:
+                    self.data.update(event['data'])  # Set incoming data to the global "data" object
+                    response = self.generate_event('OBD', 'status', 'ok')
             dump = json.dumps(response)
-            self.socket.send(dump)
+            self.socket.send(dump) # send response
             self.pretty_print('OBD', str(response))
         except Exception as error:
             self.pretty_print('OBD', str(error))
