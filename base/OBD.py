@@ -109,7 +109,7 @@ class WatchDog:
                 }
             elif event['type'] == 'CMQ':
                 # TODO Set incoming data to the global "data" object
-                self.data.update(event['data'])
+                self.data.update(event['data']) 
                 response = {
                     'type' : 'OBD',
                     'data' : {}
