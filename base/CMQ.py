@@ -29,11 +29,12 @@ Device Class
 This is a USB device which is part of a MIMO system
 """
 class Controller:
-    def __init__(self, name, baud, timeout, rules):
-        self.name = name
+    def __init__(self, uid, name, baud=9600, timeout=1, rules={}, port_attempts=5, read_attempts=5):
+        self.uid = uid # e.g. VDC
         self.baud = baud
         self.timeout = timeout
         self.rules = rules
+        self.uid = uid
         """ 
         Rules are formatted as a 4 part list:
             1. Key
@@ -41,10 +42,27 @@ class Controller:
             3. UID
             4. Message
         """
-        try:
-            self.port = serial.Serial(name, baud, timeout)
-        except:
-            raise ValueError('%s failed to initialize' % name) # return nothing if the device failed to start on USB
+        
+        ## Make several attempts to locate serial connection
+        for i in range(port_attempts):
+            try:
+                self.name = name + str(i) # e.g. /dev/ttyACM1
+                pretty_print('CMQ', 'attempting to attach %s on %s' % (self.uid, self.name))
+                self.port = serial.Serial(self.name, self.baud, timeout=self.timeout)
+                time.sleep(1)
+                for j in range(read_attempts):
+                    string = self.port.readline()
+                    if string is not None:
+                        try:    
+                            data = ast.literal_eval(string)
+                            if data['uid'] == self.uid:
+                                return self
+                        except Exception as error:
+                            pretty_print('CMQ', str(error))
+            except Exception as error:
+                pretty_print('CMQ', str(error))
+        else:
+            raise ValueError('all attempts failed when searching for %s' % self.uid)
     
 """
 CMQ is a CAN/ZMQ Wondersystem
@@ -71,37 +89,32 @@ class CMQ:
         self.config = config
         self.controllers = {}
         try:
-            for dev in config: 
-                c = Controller(dev['name'], dev['baud'], dev['timeout'], dev['rules'])
-                if c: self.add_controller(c)
+            for dev in config:
+                self.add_controller(dev)
         except Exception as e:
             pretty_print('CMQ', str(e))
         pretty_print('CMQ', 'Controller List : %s' % self.list_controllers())
         
+       
     # Add new controller to the network
     # Checks to make sure UID is correct before inserting into controllers dict
     # TODO: handle errors
-    def add_controller(self, dev, attempts=1):
+    def add_controller(self, device_config):
         try:
-            pretty_print('CMQ', 'Trying to add %s @ %d' % (dev.name, dev.baud))
-            for i in range(attempts):
-                pretty_print('CMQ', '%s attempt #%d' % (dev.name, i+1))
-                try:
-                    string = dev.port.readline()
-                    if string is not None:
-                        try:    
-                            data = ast.literal_eval(string)
-                            uid = data['uid'] #TODO Confirm if this is the right key
-                        except Exception as e:
-                            raise KeyError('Failed to find valid UID')
-                        self.controllers[uid] = dev
-                        self.generate_event('CMQ', "Adding %s is %s" % (dev.name, uid))
-                except Exception as e:
-                    pretty_print('CMQ', 'Error: %s' % str(e))
-            raise ValueError('All attempts failed when adding: %s' % dev.name)
+            # The device config should have each of these key-vals
+            uid = device_config['uid']
+            name = device_config['name']
+            baud = device_config['baud']
+            timeout = device_config['timeout']
+            rules = device_config['rules']
+            
+            # Attempt to locate controller
+            c = Controller(uid, name, baud=baud, timeout=timeout, rules=rules)
+            pretty_print('CMQ', "Adding %s on %s" % (c.uid, c.name))
+            self.controllers[uid] = c #TODO Save the controller obj if successful
         except Exception as error:
             pretty_print('CMQ', str(error))
-        
+            
     # Remove controller from the network by UID
     def remove_controller(self, uid):
         try:

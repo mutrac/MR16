@@ -1,20 +1,20 @@
 [
     {
-        "name" : "/dev/ttyACM0",
+        "name" : "/dev/ttyACM",
         "uid" : "ESC",
         "baud" : 9600,
         "timeout" : 0.1,
         "rules" : []
     },
     {
-        "name" : "/dev/ttyACM1",
+        "name" : "/dev/ttyACM",
         "uid" : "TCS",
         "baud" : 9600,
         "timeout" : 0.1,
         "rules" : []
     },
     {
-        "name" : "/dev/ttyACM2",
+        "name" : "/dev/ttyACM",
         "uid" : "VDC",
         "baud" : 9600,
         "timeout" : 0.1,
