@@ -29,7 +29,8 @@ Device Class
 This is a USB device which is part of a MIMO system
 """
 class Controller:
-    def __init__(self, uid, name, baud=9600, timeout=1, rules={}, port_attempts=5, read_attempts=5):
+    def __init__(self, uid, name, baud=9600, timeout=1, rules={}, port_attempts=5, read_attempts=10):
+        self.name = name
         self.uid = uid # e.g. VDC
         self.baud = baud
         self.timeout = timeout
@@ -56,7 +57,8 @@ class Controller:
                         try:    
                             data = ast.literal_eval(string)
                             if data['uid'] == self.uid:
-                                return self
+                                pretty_print('CMQ', 'found matching UID')
+                                return
                         except Exception as error:
                             pretty_print('CMQ', str(error))
             except Exception as error:
@@ -110,7 +112,7 @@ class CMQ:
             
             # Attempt to locate controller
             c = Controller(uid, name, baud=baud, timeout=timeout, rules=rules)
-            pretty_print('CMQ', "Adding %s on %s" % (c.uid, c.name))
+            pretty_print('CMQ', "adding %s on %s" % (c.uid, c.name))
             self.controllers[uid] = c #TODO Save the controller obj if successful
         except Exception as error:
             pretty_print('CMQ', str(error))
@@ -130,7 +132,7 @@ class CMQ:
     
         ## Read and parse
         pretty_print('CMQ', 'Listening for %s' % dev.name)
-        dump = dev.port.read(timeout=dev.timeout)
+        dump = dev.port.read()
         if not dump:
             return self.generate_event('CMQ', 'error', 'No data from %s' % dev.name)
         event = ast.literal_eval(dump) #! TODO: check sum here?
@@ -153,7 +155,7 @@ class CMQ:
     def listen_all(self):
         if self.controllers:
             events = []
-            for c in self.controllers:
+            for c in self.controllers.values(): # get each controller in network
                 try:
                     e = self.listen(c)
                     events.append(e)
