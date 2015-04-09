@@ -122,7 +122,7 @@ void loop() {
   /* --- END Ballast Subsystem--- */
 
   // Format data buffer
-  sprintf(DATA_BUFFER, "[str:%d,act:%d,cart:%d,susp:%d]", STR_POS, ACT_POS, CART_POS, SUSP_POS);
+  sprintf(DATA_BUFFER, "{'str':%d,'act':%d,'cart':%d,'susp':%d}", STR_POS, ACT_POS, CART_POS, SUSP_POS);
   
   // Format output to USB host by the following structure: {uid, data, chksum}
   sprintf(OUTPUT_BUFFER, "{'uid':%s,'data':%s,'chksum':%d}", UID, DATA_BUFFER, checksum());
