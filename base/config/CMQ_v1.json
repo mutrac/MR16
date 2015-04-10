@@ -4,7 +4,17 @@
         "uid" : "ESC",
         "baud" : 9600,
         "timeout" : 0.1,
-        "rules" : []
+        "rules" : [
+            {   
+                "conditions" : [
+                    ["left_brake", 1],
+                    ["right_brake", 1]
+                ],
+                "description" : "Brakes pressed, don't engage CVT",
+                "target" : "TCS",
+                "command" : "C1"
+            }
+        ]
     },
     {
         "name" : "/dev/ttyACM",
