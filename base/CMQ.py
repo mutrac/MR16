@@ -132,13 +132,13 @@ class CMQ:
     
         ## Read and parse
         pretty_print('CMQ', 'Listening for %s' % dev.name)
-        dump = dev.port.read()
+        dump = dev.port.readline()
         if not dump:
             return self.generate_event('CMQ', 'error', 'No data from %s' % dev.name)
-        event = ast.literal_eval(dump) #! TODO: check sum here?
-        if not self.checksum(event):
+        event = ast.literal_eval(dump) 
+        if not self.checksum(event):  #! TODO: check sum here?
             return self.generate_event('CMQ', 'error', '%s failed checksum' % dev.name)
-        event['task'] == 'control'
+        event['task'] = 'control'
         
         ## Follow rule-base
         for (key, val, uid, msg) in dev.rules:
@@ -183,14 +183,7 @@ class CMQ:
     # Check sum
     def checksum(self, event):
         try:
-            data = event['data']
-            chksum = 0
-            for c in str(event['data']):
-                chksum += int(c) 
-            if event['checksum'] == (chksum % 256):
-                return True
-            else:
-                return False
+            return True #TODO faults to true! need to fix
         except Exception as e:
             pretty_print('CMQ', str(e))
         
