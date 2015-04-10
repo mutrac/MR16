@@ -25,26 +25,30 @@ def save_config(config, filename):
         jsonfile.write(json.dumps(config, indent=True))
 
 """
-Device Class
+Rule Class
+CURRENTLY NOT IMPLEMENTED
+"""
+class Rule:
+    def __init__(self, conditions, target, command, description=""):
+        self.conditions = conditions
+        self.target = target
+        self.command = command
+        self.description = description
+
+"""
+Controller Class
 This is a USB device which is part of a MIMO system
 """
 class Controller:
-    def __init__(self, uid, name, baud=9600, timeout=1, rules={}, port_attempts=5, read_attempts=10):
+    def __init__(self, uid, name, baud=9600, timeout=1, rules=[], port_attempts=5, read_attempts=10):
         self.name = name
         self.uid = uid # e.g. VDC
         self.baud = baud
         self.timeout = timeout
         self.rules = rules
         self.uid = uid
-        """ 
-        Rules are formatted as a 4 part list:
-            1. Key
-            2. Value
-            3. UID
-            4. Message
-        """
         
-        ## Make several attempts to locate serial connection
+        ## Make several attempts to locate serial connection to self.port
         for i in range(port_attempts):
             try:
                 self.name = name + str(i) # e.g. /dev/ttyACM1
@@ -100,20 +104,21 @@ class CMQ:
        
     # Add new controller to the network
     # Checks to make sure UID is correct before inserting into controllers dict
-    # TODO: handle errors
-    def add_controller(self, device_config):
+    def add_controller(self, config):
         try:
+        
             # The device config should have each of these key-vals
-            uid = device_config['uid']
-            name = device_config['name']
-            baud = device_config['baud']
-            timeout = device_config['timeout']
-            rules = device_config['rules']
+            uid = config['uid']
+            name = config['name']
+            baud = config['baud']
+            timeout = config['timeout']
+            rules = config['rules']
             
             # Attempt to locate controller
             c = Controller(uid, name, baud=baud, timeout=timeout, rules=rules)
             pretty_print('CMQ', "adding %s on %s" % (c.uid, c.name))
             self.controllers[uid] = c #TODO Save the controller obj if successful
+            
         except Exception as error:
             pretty_print('CMQ', str(error))
             
@@ -126,29 +131,49 @@ class CMQ:
         except Exception as error:
             pretty_print('CMQ', str(error))
             raise error
-    
-    # Listen
+
+    # Listen for new event and check rules
     def listen(self, dev):
     
         ## Read and parse
         pretty_print('CMQ', 'Listening for %s' % dev.name)
-        dump = dev.port.readline()
-        if not dump:
+        try:
+            dump = dev.port.readline()
+            event = ast.literal_eval(dump)
+            if not self.checksum(event):  #! TODO: check sum here?
+                return self.generate_event('CMQ', 'error', '%s failed checksum' % dev.name)
+            else:
+                event['task'] = 'control'
+            pretty_print('CMQ', 'Received: %s' % str(event))
+        except Exception as e:
             return self.generate_event('CMQ', 'error', 'No data from %s' % dev.name)
-        event = ast.literal_eval(dump) 
-        if not self.checksum(event):  #! TODO: check sum here?
-            return self.generate_event('CMQ', 'error', '%s failed checksum' % dev.name)
-        event['task'] = 'control'
         
         ## Follow rule-base
-        for (key, val, uid, msg) in dev.rules:
-            if (event['uid'] == uid) and (event[key] == val): # TODO: might have to handle Unicode
-                try:
-                    pretty_print('CMQ', 'Routing to controller %s:%s' % (str(key), str(val)))
-                    target = self.controllers[uid]
-                    target.port.write(msg)
-                except Exception as e:
-                    pretty_print('CMQ', str(e))
+        data = event['data']
+        for r in dev.rules:
+            try:
+                target = r['target']
+            except Exception as e:
+                pretty_print('CMQ', 'Rule does not have a target')
+            try:
+                cmd = r['command']
+            except Exception as e:
+                pretty_print('CMQ', 'Rule does not have a command')
+            try:
+                desc = r['description']
+            except Exception as e:
+                pretty_print('CMQ', 'Rule does not have description')
+            try:
+                target_dev = self.controllers[target]
+            except Exception as e:
+                pretty_print('CMQ', 'Target does not exist: %s' % target)
+            for [key,val] in r['conditions']:
+                if (data[key] == val): # TODO: might have to handle Unicode
+                    try:
+                        pretty_print('CMQ', 'Routing %s command to %s' % (str(cmd), str(target)))
+                        target_dev.port.write(msg)
+                    except Exception as e:
+                        pretty_print('CMQ', 'Failed to follow rule: %s' % desc)
         return event
         
     # Listen All 
@@ -181,16 +206,25 @@ class CMQ:
         return event
     
     # Check sum
+    # TODO something is wrong and the checksums are different. check arduino to
+    # ensure that it is doing the proper sum
     def checksum(self, event):
         try:
-            return True #TODO faults to true! need to fix
+            chksum = 0
+            data = str(event['data'])
+            data = "".join(data.split()) # remove whitespace
+            for c in data:
+                chksum += ord(c)
+            if (chksum % 256) == event['chksum']:
+                return True
+            else:
+                return False
         except Exception as e:
             pretty_print('CMQ', str(e))
         
     # Run Indefinitely
     def run(self):
-        for n in cycle(range(4)):
-            pretty_print('CMQ', 'Listening on all (%d)' % n)
+        while True:
             events = self.listen_all()
             for e in events: # Read newest 
                 try:
