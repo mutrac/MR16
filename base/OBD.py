@@ -116,6 +116,8 @@ class WatchDog:
                 else:
                     self.data.update(event['data'])  # Set incoming data to the global "data" object
                     response = self.generate_event('OBD', 'status', 'ok')
+            else:
+                response = self.generate_event('OBD', 'status', 'ok')
             dump = json.dumps(response)
             self.socket.send(dump) # send response
             self.pretty_print('OBD', str(response))
