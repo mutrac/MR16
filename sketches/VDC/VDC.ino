@@ -2,6 +2,8 @@
   Vehicle Dynamics Controller (VDC)
   McGill ASABE Tractor Team
   Revision 2016
+  
+  Requires: Arduino UNO with Pololu DualVNH5019 Motor Shield
 */
 
 /* --- LIBRARIES --- */
@@ -125,7 +127,7 @@ void loop() {
   sprintf(DATA_BUFFER, "{'str':%d,'act':%d,'cart':%d,'susp':%d}", STR_POS, ACT_POS, CART_POS, SUSP_POS);
   
   // Format output to USB host by the following structure: {uid, data, chksum}
-  sprintf(OUTPUT_BUFFER, "{'uid':%s,'data':%s,'chksum':%d}", UID, DATA_BUFFER, checksum());
+  sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d}", UID, DATA_BUFFER, checksum());
   Serial.println(OUTPUT_BUFFER);
  
 }
@@ -137,6 +139,6 @@ int checksum() {
   for (int i = 0; i < DATA_SIZE; i++) {
     sum += DATA_BUFFER[i];
   }
-  int val = sum % 256;
+  int val = sum % 16;
   return val;
 }
