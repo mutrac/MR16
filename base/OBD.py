@@ -103,21 +103,24 @@ class WatchDog:
             self.add_log_entry(event)
             
             # Send response to CAN
-            if event['uid'] == 'HUD':
+            uid = event['uid']
+            if uid == 'HUD':
                 #! TODO: Respond to ERRORS from the HUD (if any ...)
                 if event['task'] == 'error':
                     response = self.generate_event('OBD', 'handler', {})
                 else:
                     response = self.generate_event('OBD', 'update', self.data)
-            elif event['uid'] == 'CMQ':
+            elif uid == 'CMQ':
                 #! TODO: Respond to ERRORS from the CMQ
                 if event['task'] == 'error': # check if ERROR
                     response = self.generate_event('OBD', 'handler', {})
                 else:
-                    self.data.update(event['data'])  # Set incoming data to the global "data" object
                     response = self.generate_event('OBD', 'status', 'ok')
-            else:
+            elif (uid == 'VDC') or (uid == 'ESC') or (uid == 'TCS'):
+                self.data.update(event['data'])  # Set incoming data to the global "data" object
                 response = self.generate_event('OBD', 'status', 'ok')
+            else:
+                raise ValueError('Unknown UID!')
             dump = json.dumps(response)
             self.socket.send(dump) # send response
             self.pretty_print('OBD', str(response))

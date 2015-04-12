@@ -29,11 +29,10 @@ const int CART_MODE_PIN = 4;
 
 /* --- GLOBAL VARIABLES --- */
 // Create sensor values
-int LOAD_BALANCE_MODE = false;
+int CART_MODE = 0;
 int STR_POS = 0;
 int ACT_POS = 0;
 int SUSP_POS = 0;
-int CART_POS = 0;
 boolean CART_FORWARD = false;
 boolean CART_BACKWARD = false;
 
@@ -56,6 +55,7 @@ void setup() {
   // Initialize Inputs
   pinMode(CART_FORWARD_PIN, INPUT);
   pinMode(CART_BACKWARD_PIN, INPUT);
+  pinMode(CART_MODE_PIN, INPUT);
   pinMode(STEERING_POSITION_PIN, INPUT);
   pinMode(ACTUATOR_POSITION_PIN, INPUT);
   pinMode(SUSPENSION_POSITION_PIN, INPUT);
@@ -97,16 +97,16 @@ void loop() {
  
   // Set cart mode
   if (digitalRead(CART_MODE_PIN)) {
-    if (LOAD_BALANCE_MODE) {
-      LOAD_BALANCE_MODE = false;
+    if (CART_MODE) {
+      CART_MODE = 0;
     }
     else {
-      LOAD_BALANCE_MODE = true;
+      CART_MODE = 1;
     }
   }
   
   // Set ballast motor power
-  if (LOAD_BALANCE_MODE) {
+  if (CART_MODE) {
     int val = int(BALLAST_OUT);
     VDC.setM2Speed(val);
   }
@@ -124,7 +124,7 @@ void loop() {
   /* --- END Ballast Subsystem--- */
 
   // Format data buffer
-  sprintf(DATA_BUFFER, "{'str':%d,'act':%d,'cart':%d,'susp':%d}", STR_POS, ACT_POS, CART_POS, SUSP_POS);
+  sprintf(DATA_BUFFER, "{'str':%d,'act':%d,'cart_mode':%d,'susp':%d}", STR_POS, ACT_POS, CART_MODE, SUSP_POS);
   
   // Format output to USB host by the following structure: {uid, data, chksum}
   sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d}", UID, DATA_BUFFER, checksum());
@@ -139,6 +139,6 @@ int checksum() {
   for (int i = 0; i < DATA_SIZE; i++) {
     sum += DATA_BUFFER[i];
   }
-  int val = sum % 16;
+  int val = sum % 256;
   return val;
 }

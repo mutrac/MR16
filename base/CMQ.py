@@ -139,6 +139,7 @@ class CMQ:
         pretty_print('CMQ', 'Listening for %s' % dev.name)
         try:
             dump = dev.port.readline()
+            pretty_print('CMQ', 'Read: %s' % str(dump))
             event = ast.literal_eval(dump)
             if not self.checksum(event):  #! TODO: check sum here?
                 return self.generate_event('CMQ', 'error', '%s failed checksum' % dev.name)

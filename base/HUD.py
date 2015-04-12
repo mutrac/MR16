@@ -85,7 +85,7 @@ class SafeMode:
             dump = json.dumps(request)
             self.zmq_client.send(dump)
         except Exception as error:
-            pretty_print('DISP', str(error))
+            pretty_print('HUD', str(error))
         
         # Wait for response and map values to labels
         try:
@@ -95,14 +95,14 @@ class SafeMode:
                 if socks.get(self.zmq_client) == zmq.POLLIN:
                     dump = self.zmq_client.recv(zmq.NOBLOCK) # zmq.NOBLOCK
                     event = json.loads(dump)
-                    pretty_print('CMQ', 'RECEIVED: %s' % str(event))
+                    pretty_print('HUD', 'Received response from OBD')
                 else:
-                    pretty_print('CMQ', 'ERROR: Poller Timeout')
+                    pretty_print('HUD', 'ERROR: Poller Timeout')
             else:
-                pretty_print('CMQ', 'ERROR: Socket Timeout')
-            pretty_print('DISP', 'Updating Labels %s' % str(event['data']))
-            event['time'] = time.time() #! the event determines which labels are changed
-            data = event['data']
+                pretty_print('HUD', 'ERROR: Socket Timeout')
+            pretty_print('HUD', 'Updating Labels: %s' % str(event['data']))
+            event['time'] = time.time()
+            data = event['data'] #! the event determines which labels are changed
             for name in data.keys():
                 try:
                     label_txt = data[name]

@@ -12,16 +12,7 @@
    "x": 0, 
    "font_type": "Helvetica"
   },
-  "mcu": {
-   "font_size": 24, 
-   "initial_value": "", 
-   "format": "%s", 
-   "bg_color": "#FFFFFF", 
-   "y": 40, 
-   "x": 0, 
-   "font_type": "Helvetica"
-  },
-  "w_eng": {
+  "cart_mode": {
    "font_size": 24, 
    "initial_value": "", 
    "format": "%s rpm", 
@@ -30,7 +21,7 @@
    "x": 0, 
    "font_type": "Helvetica"
   },
-  "type": {
+  "str": {
    "font_size": 24, 
    "initial_value": "", 
    "format": "%s", 
@@ -39,12 +30,21 @@
    "x": 0, 
    "font_type": "Helvetica"
   },
-  "msg": {
+  "act": {
    "font_size": 24, 
    "initial_value": "", 
    "format": "%s", 
    "bg_color": "#FFFFFF", 
    "y": 160, 
+   "x": 0, 
+   "font_type": "Helvetica"
+  },
+  "susp": {
+   "font_size": 24, 
+   "initial_value": "", 
+   "format": "%s", 
+   "bg_color": "#FFFFFF", 
+   "y": 200, 
    "x": 0, 
    "font_type": "Helvetica"
   }
