@@ -77,7 +77,7 @@ class SafeMode:
         return event
     
     # Update the label values
-    def update_labels(self):
+    def run_async(self):
     
         # Ping host to request data update
         try:
@@ -119,6 +119,6 @@ if __name__ == '__main__':
     display = SafeMode(config)
     while True:
         try:
-            display.update_labels()
+            display.run_async()
         except KeyboardInterrupt:
             break

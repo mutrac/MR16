@@ -224,7 +224,7 @@ class CMQ:
             pretty_print('CMQ', str(e))
         
     # Run Indefinitely
-    def run(self):
+    def run_async(self):
         while True:
             events = self.listen_all()
             for e in events: # Read newest 
@@ -272,4 +272,4 @@ if __name__ == '__main__':
     with open('config/CMQ_v1.json', 'r') as jsonfile:
         config = json.loads(jsonfile.read()) # Load settings file
     cmq = CMQ(config) # Start the MQ client
-    cmq.run()
+    cmq.run_async()
