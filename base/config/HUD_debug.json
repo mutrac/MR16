@@ -1,72 +1,118 @@
 {
- "fullscreen": false, 
- "bg": "#FFFFFF", 
- "geometry": "640x480+0+0", 
- "labels": {
-  "time": {
-   "font_size": 24, 
-   "initial_value": "", 
-   "format": "time: %s", 
-   "bg_color": "#FFFFFF", 
-   "y": 40, 
-   "x": 0, 
-   "font_type": "Helvetica"
-  },
-  "cart_mode": {
-   "font_size": 24, 
-   "initial_value": "", 
-   "format": "cart_mode: %s", 
-   "bg_color": "#FFFFFF", 
-   "y": 80, 
-   "x": 0, 
-   "font_type": "Helvetica"
-  },
-  "str": {
-   "font_size": 24, 
-   "initial_value": "", 
-   "format": "str: %s", 
-   "bg_color": "#FFFFFF", 
-   "y": 120, 
-   "x": 0, 
-   "font_type": "Helvetica"
-  },
-  "act": {
-   "font_size": 24, 
-   "initial_value": "", 
-   "format": "act: %s", 
-   "bg_color": "#FFFFFF", 
-   "y": 160, 
-   "x": 0, 
-   "font_type": "Helvetica"
-  },
-  "susp": {
-   "font_size": 24, 
-   "initial_value": "", 
-   "format": "susp: %s", 
-   "bg_color": "#FFFFFF", 
-   "y": 200, 
-   "x": 0, 
-   "font_type": "Helvetica"
-  },
-  "t_avg": {
-   "font_size": 24, 
-   "initial_value": "", 
-   "format": "t_avg: %s", 
-   "bg_color": "#FFFFFF", 
-   "y": 240, 
-   "x": 0, 
-   "font_type": "Helvetica"
-  },
-  "v_avg": {
-   "font_size": 24, 
-   "initial_value": "", 
-   "format": "v_avg: %s", 
-   "bg_color": "#FFFFFF", 
-   "y": 280, 
-   "x": 0, 
-   "font_type": "Helvetica"
-  }
- }, 
- "state": "normal", 
- "pad": 3
+    "fullscreen": false, 
+    "bg": "#FFFFFF", 
+    "geometry": "640x480+0+0",
+    "state": "normal", 
+    "pad": 3,
+    "labels": {
+        "time": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "time: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 20, 
+            "x": 0, 
+            "font_type": "Helvetica"
+        },
+        "cart_mode": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "cart_mode: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 60, 
+            "x": 0, 
+            "font_type": "Helvetica"
+        },
+        "str": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "str: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 100, 
+            "x": 0, 
+            "font_type": "Helvetica"
+        },
+        "act": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "act: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 140, 
+            "x": 0, 
+            "font_type": "Helvetica"
+        },
+        "susp": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "susp: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 180, 
+            "x": 0, 
+            "font_type": "Helvetica"
+        },
+        "t_avg": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "t_avg: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 220, 
+            "x": 0, 
+            "font_type": "Helvetica"
+        },
+        "v_avg": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "v_avg: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 260, 
+            "x": 0, 
+            "font_type": "Helvetica"
+        },
+        "engine_rpm": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "engine_rpm: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 300, 
+            "x": 0, 
+            "font_type": "Helvetica"
+        },
+        "driveshaft_rpm": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "driveshaft_rpm: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 300, 
+            "x": 0, 
+            "font_type": "Helvetica"
+        },
+        "wheel_rpm": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "wheel_rpm: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 340, 
+            "x": 0, 
+            "font_type": "Helvetica"
+        },
+        "cvt_ratio": {
+            "font_size": 24, 
+            "initial_value": "", 
+           "format": "cvt_ratio: %s", 
+           "bg_color": "#FFFFFF", 
+           "y": 380, 
+           "x": 0, 
+           "font_type": "Helvetica"
+        },
+        "pull_mode": {
+            "font_size": 24, 
+            "initial_value": "", 
+           "format": "pull_mode: %s", 
+           "bg_color": "#FFFFFF", 
+           "y": 380, 
+           "x": 0, 
+           "font_type": "Helvetica"
+        }
+        
+    }
 }

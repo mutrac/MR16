@@ -1,6 +1,8 @@
 /*
   Engine Safety Controller (ESC)
   McGill ASABE Tractor Team
+  
+  Requirements: Arduino Mega
 */
 
 /* --- LIBRARIES --- */

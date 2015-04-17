@@ -31,8 +31,19 @@ const int CVT_MODE_PIN = 12;
 // Analog Input
 const int CVT_POSITION_PIN = A0;
 
+// Stepper Motor Settings
+const int STEPPER_SPEED = 100;
+const int STEPPER_RESOLUTION = 48;
+const int STEPPER_TYPE = 2; // biploar
+const int STEPPER_DISENGAGE = 0; // the encoder reading when the stepper motor engages/disenchages the CVT
+const int STEPPER_MAX = 1024; // the encoder reading when the stepper is fully extended
+
+// CVT Settings
+const float CVT_RATIO_MAX = 4.13;
+const float CVT_RATIO_MIN = 0.77;
+
 /* --- Global Variables --- */
-boolean PULL_MODE = false;
+boolean PULL_MODE = 0;
 int CVT_POSITION = 0;
 
 // Manual PID
@@ -46,7 +57,7 @@ double PULL_SET, PULL_IN, PULL_OUT;
 PID PULL_PID(&PULL_IN, &PULL_OUT, &PULL_SET, PULL_P, PULL_I, PULL_D, DIRECT);
 
 // Stepper
-AF_Stepper STEPPER(48, 2); // TODO: find stepper resolution
+AF_Stepper STEPPER(STEPPER_RESOLUTION, STEPPER_TYPE); // TODO: find stepper resolution
 
 // Counters
 volatile int SPARKPLUG_PULSES = 0;
@@ -57,6 +68,10 @@ volatile int ENCODER_PULSES = 0;
 // Char Buffers
 char OUTPUT_BUFFER[OUTPUT_SIZE];
 char DATA_BUFFER[DATA_SIZE];
+
+// Timers
+long TIME_A = millis();
+long TIME_B = millis();
 
 /* --- Setup --- */
 void setup() {
@@ -83,7 +98,7 @@ void setup() {
   attachInterrupt(ENCODER_INT, encoder_counter, RISING);
   
   // Initialize Stepper
-  STEPPER.setSpeed(100); // the stepper speed in rpm
+  STEPPER.setSpeed(STEPPER_SPEED); // the stepper speed in rpm
 }
 
 /* --- Loop --- */
@@ -94,21 +109,28 @@ void loop() {
   DRIVESHAFT_PULSES = 0;
   WHEEL_PULSES = 0;
   
-  // Wait and get values
+  // Wait and get volatile values
+  TIME_A = millis();
   delay(INTERVAL);
+  TIME_B = millis();
   int driveshaft_rpm =  DRIVESHAFT_PULSES / INTERVAL;
   int sparkplug_rpm =  SPARKPLUG_PULSES / INTERVAL;
+  int engine_rpm =  2 * sparkplug_rpm;
   int wheel_rpm =  WHEEL_PULSES / INTERVAL;
   int cvt_ratio = sparkplug_rpm / driveshaft_rpm;
   int differential_ratio = driveshaft_rpm / wheel_rpm;
+  
+  // Read the position of the joystick
   CVT_POSITION = analogRead(CVT_POSITION_PIN);
   
-  // Calculate manual controller output
+  // Calculate MANUAL controller output
+  // In this mode, the encoder position to track the joystick position
   MANUAL_IN = double(ENCODER_PULSES);
   MANUAL_SET = double(CVT_POSITION);
   MANUAL_PID.Compute();
   
-  // Calculate automatic controller output
+  // Calculate AUTOMATIC controller output
+  // In this mode, the engine RPM is maximized by reducing the cvt_ratio until the disengagement threshold is reached
   PULL_IN = double(cvt_ratio);
   PULL_SET = double(CVT_POSITION);
   PULL_PID.Compute();
@@ -116,10 +138,10 @@ void loop() {
   // Set CVT Mode
   if (digitalRead(CVT_MODE_PIN)) {
     if (PULL_MODE) {
-      PULL_MODE = false;
+      PULL_MODE = 0;
     }
     else {
-      PULL_MODE = true;
+      PULL_MODE = 1;
     }
   }
 
@@ -142,7 +164,7 @@ void loop() {
   }
   
   // Output string buffer
-  sprintf(DATA_BUFFER, "{'driveshaft':%d,'wheel':%d,'sparkplug':%d}", driveshaft_rpm, wheel_rpm, sparkplug_rpm);
+  sprintf(DATA_BUFFER, "{'driveshaft_rpm':%d,'wheel_rpm':%d,'engine_rpm':%d,'cvt_ratio':%d,'pull_mode':%d}", driveshaft_rpm, wheel_rpm,  engine_rpm, cvt_ratio, PULL_MODE);
   sprintf(OUTPUT_BUFFER, "{'uid':'%s',data':%s,'chksum':%d,'task':%s}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
 }
