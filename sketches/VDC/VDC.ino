@@ -13,6 +13,8 @@
 /* --- GLOBAL CONSTANTS --- */
 // USB/CanBUS Info
 const char UID[] = "VDC";
+const char PULL[] = "pull";
+const char PUSH[] = "push";
 const int BAUD = 9600;
 const int DATA_SIZE = 128;
 const int OUTPUT_SIZE = 256;
@@ -127,7 +129,7 @@ void loop() {
   sprintf(DATA_BUFFER, "{'str':%d,'act':%d,'cart_mode':%d,'susp':%d}", STR_POS, ACT_POS, CART_MODE, SUSP_POS);
   
   // Format output to USB host by the following structure: {uid, data, chksum}
-  sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d}", UID, DATA_BUFFER, checksum());
+  sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d,'task':%s}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
  
 }

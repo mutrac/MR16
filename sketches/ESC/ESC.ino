@@ -12,6 +12,8 @@
 /* --- GLOBAL CONSTANTS --- */
 // CAN
 const char UID[] = "ESC";
+const char PUSH[] = "push";
+const char PULL[] = "pull";
 const int BAUD = 9600;
 const int RFID_BAUD = 9600;
 const int OUTPUT_SIZE = 256;
@@ -194,7 +196,7 @@ void loop() {
   
   // USB
   sprintf(DATA_BUFFER, "{'run_mode':%d,'right_brake':%d,'left_brake':%d,'cvt_guard':%d,'seat':%d,'hitch':%d,'ignition':%d}", RUN_MODE, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, SEAT_KILL, HITCH_KILL, IGNITION);
-  sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d}", UID, DATA_BUFFER, checksum());
+  sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d,'task':%s}", UID, DATA_BUFFER, checksum(),PUSH);
   Serial.println(OUTPUT_BUFFER);
 }
 

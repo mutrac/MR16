@@ -6,16 +6,16 @@
   "time": {
    "font_size": 24, 
    "initial_value": "", 
-   "format": "%s sec", 
+   "format": "time: %s", 
    "bg_color": "#FFFFFF", 
-   "y": 20, 
+   "y": 40, 
    "x": 0, 
    "font_type": "Helvetica"
   },
   "cart_mode": {
    "font_size": 24, 
    "initial_value": "", 
-   "format": "%s rpm", 
+   "format": "cart_mode: %s", 
    "bg_color": "#FFFFFF", 
    "y": 80, 
    "x": 0, 
@@ -24,7 +24,7 @@
   "str": {
    "font_size": 24, 
    "initial_value": "", 
-   "format": "%s", 
+   "format": "str: %s", 
    "bg_color": "#FFFFFF", 
    "y": 120, 
    "x": 0, 
@@ -33,7 +33,7 @@
   "act": {
    "font_size": 24, 
    "initial_value": "", 
-   "format": "%s", 
+   "format": "act: %s", 
    "bg_color": "#FFFFFF", 
    "y": 160, 
    "x": 0, 
@@ -42,9 +42,27 @@
   "susp": {
    "font_size": 24, 
    "initial_value": "", 
-   "format": "%s", 
+   "format": "susp: %s", 
    "bg_color": "#FFFFFF", 
    "y": 200, 
+   "x": 0, 
+   "font_type": "Helvetica"
+  },
+  "t_avg": {
+   "font_size": 24, 
+   "initial_value": "", 
+   "format": "t_avg: %s", 
+   "bg_color": "#FFFFFF", 
+   "y": 240, 
+   "x": 0, 
+   "font_type": "Helvetica"
+  },
+  "v_avg": {
+   "font_size": 24, 
+   "initial_value": "", 
+   "format": "v_avg: %s", 
+   "bg_color": "#FFFFFF", 
+   "y": 280, 
    "x": 0, 
    "font_type": "Helvetica"
   }

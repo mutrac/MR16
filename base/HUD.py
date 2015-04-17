@@ -13,6 +13,7 @@ import zmq
 import time
 import json
 import random
+import numpy as np
 
 # Useful Functions 
 def pretty_print(task, msg):
@@ -23,7 +24,7 @@ def pretty_print(task, msg):
 class SafeMode: 
         
     def __init__(self, config, addr="tcp://127.0.0.1:1980", timeout=0.1):
-        pretty_print('DISP_INIT', 'Setting Layout')
+        pretty_print('HUD', 'Setting Layout')
         self.addr = addr
         self.timeout = timeout
         self.zmq_context = zmq.Context()
@@ -49,7 +50,7 @@ class SafeMode:
     
     # Create a new label
     def create_label(self, name, settings):
-        pretty_print('NEW LABEL', '%s' % name)
+        pretty_print('HUD', '%s' % name)
         self.labels[name] = tk.StringVar()
         self.labels[name].set(settings['format'] % settings['initial_value'])
         self.label_formats[name] = settings['format']
@@ -81,7 +82,7 @@ class SafeMode:
     
         # Ping host to request data update
         try:
-            request = self.generate_event('HUD', 'request', {}) #! TODO add error creator component, currently only makes update requests
+            request = self.generate_event('HUD', 'pull', {}) #! TODO add error creator component, currently only makes update requests
             dump = json.dumps(request)
             self.zmq_client.send(dump)
         except Exception as error:
@@ -96,22 +97,25 @@ class SafeMode:
                     dump = self.zmq_client.recv(zmq.NOBLOCK) # zmq.NOBLOCK
                     event = json.loads(dump)
                     pretty_print('HUD', 'Received response from OBD')
+                    pretty_print('HUD', 'Updating Labels: %s' % str(event['data']))
+                    event['time'] = time.time()
+                    data = event['data'] #! the event determines which labels are changed
+                    for name in data.keys():
+                        try:
+                            label_val = data[name]
+                            if not np.isnan(label_val):
+                                label_txt = self.label_formats[name] % str(label_val)
+                                self.labels[name].set(label_txt)
+                                self.master.update_idletasks()
+                        except KeyError as error:
+                            pretty_print('HUD', "label '%s' does not exist" % name)
                 else:
                     pretty_print('HUD', 'ERROR: Poller Timeout')
             else:
                 pretty_print('HUD', 'ERROR: Socket Timeout')
-            pretty_print('HUD', 'Updating Labels: %s' % str(event['data']))
-            event['time'] = time.time()
-            data = event['data'] #! the event determines which labels are changed
-            for name in data.keys():
-                try:
-                    label_txt = data[name]
-                    self.labels[name].set(label_txt)
-                    self.master.update_idletasks()
-                except KeyError as error:
-                    pretty_print('DISP', "label '%s' does not exist" % name)
+
         except Exception as error:
-            pretty_print('DISP', str(error))
+            pretty_print('HUD', str(error))
 
 if __name__ == '__main__':
     with open('config/HUD_debug.json', 'r') as jsonfile:

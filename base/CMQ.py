@@ -143,8 +143,6 @@ class CMQ:
             event = ast.literal_eval(dump)
             if not self.checksum(event):  #! TODO: check sum here?
                 return self.generate_event('CMQ', 'error', '%s failed checksum' % dev.name)
-            else:
-                event['task'] = 'control'
             pretty_print('CMQ', 'Received: %s' % str(event))
         except Exception as e:
             return self.generate_event('CMQ', 'error', 'No data from %s' % dev.name)

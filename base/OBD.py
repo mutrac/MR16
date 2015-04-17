@@ -1,8 +1,8 @@
 """
 OBD.py - Onboard Diagnostic System
 
-This system behaves as the hub for all controller activity and as such hosts
-the ZMQ server.
+This system behaves as the hub for all activity and hosts
+the ZMQ server to communicate with the HUD, V6, and CMQ
 """
 __author__ = 'Trevor Stanhope'
 __version___ = 0.1
@@ -94,7 +94,6 @@ class WatchDog:
     def listen(self):
         try:
             # Receive message from CAN
-            self.pretty_print('OBD', 'Listening ...')
             packet = self.socket.recv()
             event = json.loads(packet)
             self.pretty_print('OBD', 'Received: %s' % str(event))
@@ -102,28 +101,45 @@ class WatchDog:
             # Save to Database
             self.add_log_entry(event)
             
-            # Send response to CAN
+            # Handle events from either VDC, TCS, ESC, CMQ, HUD, or V6
             uid = event['uid']
             if uid == 'HUD':
                 #! TODO: Respond to ERRORS from the HUD (if any ...)
                 if event['task'] == 'error':
-                    response = self.generate_event('OBD', 'handler', {})
+                    response = self.generate_event('OBD', 'error', {})
+                elif event['task'] == 'pull':
+                    response = self.generate_event('OBD', 'pull', self.data)
                 else:
-                    response = self.generate_event('OBD', 'update', self.data)
+                    raise ValueError('Unrecognized task for HUD request')
             elif uid == 'CMQ':
                 #! TODO: Respond to ERRORS from the CMQ
                 if event['task'] == 'error': # check if ERROR
-                    response = self.generate_event('OBD', 'handler', {})
+                    response = self.generate_event('OBD', 'error', {})
+                elif event['task'] == 'push':
+                    response = self.generate_event('OBD', 'push', 'ok')
                 else:
-                    response = self.generate_event('OBD', 'status', 'ok')
+                    raise ValueError('Unrecognized task for CMQ request')
             elif (uid == 'VDC') or (uid == 'ESC') or (uid == 'TCS'):
-                self.data.update(event['data'])  # Set incoming data to the global "data" object
-                response = self.generate_event('OBD', 'status', 'ok')
+                if event['task'] == 'error': # check if ERROR
+                    response = self.generate_event('OBD', 'error', {})
+                elif event['task'] == 'push':
+                    self.data.update(event['data'])  # Set incoming data to the global "data" object
+                    response = self.generate_event('OBD', 'push', 'ok')
+                else:
+                    raise ValueError('Unrecognized task for ESC/VDC/TCS request')
+            elif uid == 'CV6':
+                if event['task'] == 'error': # check if ERROR
+                    response = self.generate_event('OBD', 'error', {})
+                elif event['task'] == 'push':
+                    self.data.update(event['data'])  # Set incoming data to the global "data" object
+                    response = self.generate_event('OBD', 'push', 'ok')
+                else:
+                    raise ValueError('Unrecognized task for CV6 request')
             else:
                 raise ValueError('Unknown UID!')
             dump = json.dumps(response)
             self.socket.send(dump) # send response
-            self.pretty_print('OBD', str(response))
+            self.pretty_print('OBD', 'Response: %s' % str(response))
         except Exception as error:
             self.pretty_print('OBD', str(error))
     

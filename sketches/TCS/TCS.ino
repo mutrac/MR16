@@ -10,6 +10,8 @@
 /* --- Global Constants --- */
 // CAN
 const char UID[] = "TCS";
+const char PULL[] = "pull";
+const char PUSH[] = "push";
 const int BAUD = 9600;
 const int DATA_SIZE = 128;
 const int OUTPUT_SIZE = 256;
@@ -141,7 +143,7 @@ void loop() {
   
   // Output string buffer
   sprintf(DATA_BUFFER, "{'driveshaft':%d,'wheel':%d,'sparkplug':%d}", driveshaft_rpm, wheel_rpm, sparkplug_rpm);
-  sprintf(OUTPUT_BUFFER, "{'uid':'%s',data':%s,'chksum':%d}", UID, DATA_BUFFER, checksum());
+  sprintf(OUTPUT_BUFFER, "{'uid':'%s',data':%s,'chksum':%d,'task':%s}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
 }
 
