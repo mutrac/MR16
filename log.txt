@@ -1,0 +1,426 @@
+commit bc468fcd91c3babcbf09b8706466eec9e159098e
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Fri Apr 17 18:05:28 2015 -0400
+
+    added labels for ESC, TCS and VDC to HUD
+
+commit 722add2c8cab11b9cfbb00226194bc4104c8c502
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Fri Apr 17 02:27:17 2015 -0400
+
+    now HUD handles nan, need to add labels for ESC and TCS
+
+commit 2d3805e1a8bf68c3a6013b0c94ff060f08adab80
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Thu Apr 16 01:05:42 2015 -0400
+
+    mostly functional
+
+commit 3ffc839679fb92c7e2b6b0b2449a91cca7ee4bae
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sun Apr 12 04:12:34 2015 -0400
+
+    working, fixed checksum to mod 256
+
+commit 64b0870b614480594c5a9be085f14056b8e5daaa
+Author: Trevor Stanhope <trevor@W510>
+Date:   Fri Apr 10 00:57:39 2015 -0400
+
+    working even better
+
+commit d1420d7145120eaf0e3100b95322719fd1f4d9f1
+Author: Trevor Stanhope <trevor@W510>
+Date:   Fri Apr 10 00:54:03 2015 -0400
+
+    fixed bug where response is undefined, but needs to be fixed for speed
+
+commit c3fdddef571c7361fa7c4f0e32f8526892b628f9
+Author: Trevor Stanhope <trevor@W510>
+Date:   Fri Apr 10 00:45:58 2015 -0400
+
+    working even better
+
+commit 1e26b74b6aadf349609e5634fa38a2137e0b6423
+Author: Trevor Stanhope <trevor@W510>
+Date:   Fri Apr 10 00:45:48 2015 -0400
+
+    fixed checksum, added rules class (unimplemented)
+
+commit 5dbdeeac6f88098deb095bb14a8216543af9d49a
+Author: Trevor Stanhope <trevor@W510>
+Date:   Fri Apr 10 00:45:22 2015 -0400
+
+    fixed checksum, added rules class (unimplemented)
+
+commit 0140eaa955647e4ea9246287a55047ee843b59e9
+Author: Trevor Stanhope <trevor@W510>
+Date:   Thu Apr 9 21:36:39 2015 -0400
+
+    working with one controller
+
+commit 76da787663d6f74264204984f8dae45fb6da7888
+Author: Trevor Stanhope <trevor@W510>
+Date:   Thu Apr 9 18:37:34 2015 -0400
+
+    fixed error where we stored the name, not the obj. need to fix the issue with checksum
+
+commit a1694f61608e7cc387d2c68a7a5fbc335e06fbbd
+Author: Trevor Stanhope <trevor@W510>
+Date:   Thu Apr 9 18:04:50 2015 -0400
+
+    fixed from [] to {}
+
+commit f6ce578c19cc5f0ac9fcad570dd28429e820f2ae
+Author: Trevor Stanhope <trevor@W510>
+Date:   Tue Apr 7 10:44:57 2015 -0400
+
+    fixed controller adding
+
+commit e92c68c1a121141e11c8f61bad8f47476e4babd4
+Author: Trevor Stanhope <trevor@W510>
+Date:   Tue Apr 7 03:07:42 2015 -0400
+
+    runs at a relatively slower pace, but fully op
+
+commit 6c55a17463071722497827514389dad5106fdeae
+Author: Trevor Stanhope <trevor@W510>
+Date:   Mon Apr 6 22:17:56 2015 -0400
+
+    needs work
+
+commit 6e465420f9483c7200446ea9004954a030f7c800
+Author: Trevor Stanhope <trevor@W510>
+Date:   Mon Apr 6 22:13:27 2015 -0400
+
+    working, but needs inputs before HUD displays
+
+commit 6ac45897d1ddd0475a46422dbb4f2102878c54d5
+Author: Trevor Stanhope <trevor@W510>
+Date:   Mon Apr 6 22:01:12 2015 -0400
+
+    moved MR16 to bash executable
+
+commit 97dc36959df9c912e3d205b0fb3786375be10a42
+Author: Trevor Stanhope <trevor@W510>
+Date:   Mon Apr 6 04:13:58 2015 -0400
+
+    now working with HUD
+
+commit 3b6baf041c3a090d7cc5c1159f35d955ffc6e764
+Author: Trevor Stanhope <trevor@W510>
+Date:   Mon Apr 6 03:42:08 2015 -0400
+
+    cleaned up CMQ (removed MIMO subclass) and made it such that OBD and CMQ are running separately
+
+commit 565498f416e3c374d14653015a3dc06b446c7de1
+Author: Trevor Stanhope <trevor@W510>
+Date:   Mon Apr 6 00:37:45 2015 -0400
+
+    added ignore for base/data
+
+commit 788fcc52f3ae13ec6080fb0b8471b9541cc7323f
+Author: Trevor Stanhope <trevor@W510>
+Date:   Mon Apr 6 00:36:52 2015 -0400
+
+    added holder file
+
+commit bf1ec018ea2bfaf8cae1e70c85065328e5289cc1
+Author: Trevor Stanhope <trevor@W510>
+Date:   Mon Apr 6 00:18:58 2015 -0400
+
+    semi-ready traction controller, manual and pull. manual --> CVT Absolute Position, pull --> CVT ratio
+
+commit e2028be362e913311a14e02950376d8d685fa1ea
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sun Apr 5 23:21:15 2015 -0400
+
+    signiticantly cleaner and theoretically mature. needs live testing
+
+commit 9a7ea0e89e971f7101c7d092341f6a434989c995
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sun Apr 5 22:45:19 2015 -0400
+
+    pretty mature
+
+commit 334009f18c142846f6d5c77195b03e6c9dd68c67
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sun Apr 5 21:53:56 2015 -0400
+
+    added relay mode functions
+
+commit f6a949759a5bda610d822ca6341ad68e66ee96bb
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sun Apr 5 21:35:37 2015 -0400
+
+    add PSS
+
+commit 0d289ec79d10c56971ba9fcaf1bc82aeed2b462e
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sat Apr 4 04:54:46 2015 -0400
+
+    stff
+
+commit 50b5c4315a644809034fc1e74acdc47531dc53f0
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sat Apr 4 04:48:37 2015 -0400
+
+    compiles, mostly ready
+
+commit 9a03ecc151687fc7a8c844e521d31d0c8892290b
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sat Apr 4 04:03:29 2015 -0400
+
+    ignore if multiple ballast buttons pressed at once
+
+commit f61ecbff9f8ccd8564fe1d6c8b827a5910dba76a
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sat Apr 4 04:02:01 2015 -0400
+
+    improved ballast handler
+
+commit 51351a05d07f16a01fe315906a41b30b01df6eee
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sat Apr 4 03:58:44 2015 -0400
+
+    improved steering handler
+
+commit 66efa339e90ecf4055dbddd8a967b3c7a87277fb
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sat Apr 4 03:48:23 2015 -0400
+
+    basic PID functionality
+
+commit 13b9c067e2376bc611d44fd713df3abf292be914
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sat Apr 4 03:25:13 2015 -0400
+
+    pretty clean
+
+commit 47fe0d8fd33a7b4abdea7772e48288b248446680
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sat Apr 4 02:48:31 2015 -0400
+
+    compiled ESC
+
+commit 022b16a6e85a1c5d6a0829fc76e8507a06085136
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sat Apr 4 01:06:58 2015 -0400
+
+    awesome
+
+commit bcf0be14a2a84294984a5011727baa834a5bcf84
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sat Apr 4 00:36:12 2015 -0400
+
+    moved to sketches
+
+commit 87ccd7025c357e794166f1541662974ef90ea9e8
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sat Apr 4 00:35:51 2015 -0400
+
+    moved to sketches
+
+commit 7223dc3db24ccb53f78b88cf83cfdcc3d35933cc
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sat Apr 4 00:34:49 2015 -0400
+
+    moved to sketches
+
+commit 1d6f2cb02385ff5a6eaa54afb32e40a2259f043e
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sun Mar 22 01:54:51 2015 -0400
+
+    major changes to OBD-CMQ
+
+commit 7c4081058089b343d9318d75ab1f4839fb11701a
+Author: Trevor Stanhope <trevor@W510>
+Date:   Sun Mar 22 01:50:34 2015 -0400
+
+    major changes to OBD-CMQ
+
+commit 1b7b5631336f462b904febcb821fa1603083a31d
+Author: Trevor Stanhope <trevor@firebase>
+Date:   Wed Feb 25 04:14:02 2015 -0500
+
+    removed modules/
+
+commit cb63e5aeda7ab8f8bb4cd380133b1604b79e54b5
+Author: Trevor Stanhope <trevor@firebase>
+Date:   Wed Feb 25 04:13:06 2015 -0500
+
+    added V6
+
+commit 97ac347305bb77c25c00e3405501e2bb72c54d16
+Author: Trevor Stanhope <trevor@firebase>
+Date:   Wed Feb 25 04:00:15 2015 -0500
+
+    still need to add V6
+
+commit e9211092adc7b2ed8ce751c29940224fe7114d7b
+Author: Trevor Stanhope <trevor@firebase>
+Date:   Wed Feb 25 03:51:35 2015 -0500
+
+    after fetch override, added makefiles
+
+commit a8ccd0f906276e8e9447d875d3a3f42e34fc95e3
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Sun Feb 22 05:32:01 2015 -0500
+
+    added install info
+
+commit ac96303aa2b7de55ac8178e234c1a7be632cfe29
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Sun Feb 22 05:30:46 2015 -0500
+
+    added basic info to README
+
+commit c9cd75c4ab5ce82c54d637ede467f12e642581b7
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Sun Feb 22 05:26:01 2015 -0500
+
+    some progress on org
+
+commit 128d48184e86632bcc77bfff157d5119712ed56a
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Sun Feb 22 05:18:48 2015 -0500
+
+    bigger and robustier
+
+commit f9cd993f4a692d533de7c9e3aa0930bcfa85df29
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Sun Feb 22 04:38:20 2015 -0500
+
+    some progress on org
+
+commit 315db44469876c935a4fa1537679c52bebf38daa
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Sat Feb 21 02:59:26 2015 -0500
+
+    new
+
+commit 1d550f232ae4b3d5c1813ec454c0a5ea1e642d6f
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Thu Feb 19 05:58:24 2015 -0500
+
+    started MR16 sh script
+
+commit 9d2260b444dafae6c2c3db92d3a5d7f72404c10d
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Thu Feb 19 05:30:11 2015 -0500
+
+    no pyc
+
+commit 7aefc51952ddddce1b54b76adaf44bb911694edb
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Thu Feb 19 05:29:44 2015 -0500
+
+    functioning OBD-CAN message passing
+
+commit e2616c2bc425b11664afb02dfa8664cb7bdc8852
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Fri Feb 6 16:34:15 2015 -0500
+
+    changes
+
+commit a6882eccee7abe4b08928875923bae06ce11705e
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Fri Feb 6 06:54:49 2015 -0500
+
+    some good progress
+
+commit 3ce42307886ddde716911b3c93f398f4225fe00b
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Wed Feb 4 00:25:19 2015 -0500
+
+    added config saving and incorporated first aspects of HUD and CAN into MR16
+
+commit af8011e9160c83847f2011efc9b842c9c451c9bd
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Wed Feb 4 00:01:07 2015 -0500
+
+    restarted CAN
+
+commit dcabe538dfd6c126ef489750c1d800d29ac95236
+Merge: e8ca8d8 adbbf32
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Tue Feb 3 23:31:31 2015 -0500
+
+    better, faster, stronger
+
+commit e8ca8d8c4f95297a6543287ad59f0644c7bc96df
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Tue Feb 3 23:23:29 2015 -0500
+
+    forward progress on HUD
+
+commit adbbf32f664b64bd856a1bbf8885b03e8207ae7d
+Author: Trevor Stanhope <trevor@firebase>
+Date:   Sun Feb 1 04:13:44 2015 -0500
+
+    big revisions for subsys
+
+commit 61d0c57d6214e5b4db19bfb329e47327eadd9e4f
+Author: Trevor Stanhope <trevor@firebase>
+Date:   Sun Feb 1 03:35:48 2015 -0500
+
+    renamed subsystems and added PID
+
+commit b3159fc44c258cd06202831c136a9b97f81fd886
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Wed Dec 17 08:49:16 2014 -0500
+
+    more subsystem changes
+
+commit 3af716aec75563c5ccb498e073788e675afa8648
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Wed Dec 17 06:01:28 2014 -0500
+
+    first rev
+
+commit a61aca970465d4132deaf4adf27bde41c746c003
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Tue Dec 16 17:47:33 2014 -0500
+
+    start of the big stuff
+
+commit 715fb36b0e65bfafb0e6323d58a7e2110ad83716
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Wed Dec 3 20:43:22 2014 -0500
+
+    added PIDv1
+
+commit a19faca25be3e0e7ff05d9a52a86bc250f86da90
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Wed Dec 3 20:37:32 2014 -0500
+
+    changes
+
+commit c4ff4120052274d3baf726fd6ca69423e85f5551
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Mon Sep 29 11:28:08 2014 -0400
+
+    opencv docs
+
+commit f0775e8d7a86d5999ee955d9df3f0c56930761e5
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Fri Jul 25 12:14:42 2014 -0400
+
+    first revision
+
+commit 16308da0b68f92c6d71f849d9a809b0862bd709e
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Sat Jul 19 16:55:39 2014 -0400
+
+    more subsystems
+
+commit 5205bef67ed1aa804022861a110fe84b28fa9806
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Sat Jul 19 16:28:51 2014 -0400
+
+    ground speed and subsystems
+
+commit f901bdb67a16937122e4beb000a81ec188bffb3f
+Author: Trevor Stanhope <tpstanhope@gmail.com>
+Date:   Sat Jul 19 16:28:16 2014 -0400
+
+    first commit
