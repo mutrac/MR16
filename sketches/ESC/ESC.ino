@@ -36,7 +36,7 @@ const int TRIGGER_KILL_PIN = 30;
 const int PULL_PIN = 31;
 const int DBS_PIN = 32;
 const int IGNITION_PIN = 33;
-const int CYCLE_DISPLAY_PIN = 34;
+const int DISPLAY_MODE_PIN = 34;
 
 // Interrupts
 const int THROTTLE_UP_INT = 14; // These are set to an interrupt
@@ -81,16 +81,17 @@ int THROTTLE_D = 2;
 int CVT_GUARD_THRESH = 100;
 
 // Peripheral values
-boolean SEAT_KILL = 0;
-boolean HITCH_KILL = 0;
-boolean TRIGGER_KILL = 0;
-boolean BUTTON_KILL = 0;
-boolean IGNITION = 0;
+int SEAT_KILL = 0;
+int HITCH_KILL = 0;
+int TRIGGER_KILL = 0;
+int BUTTON_KILL = 0;
+int IGNITION = 0;
 int CVT_GUARD = 0;
 int RUN_MODE = 0;
 int LEFT_BRAKE = 0;
 int RIGHT_BRAKE = 0;
 int RFID_AUTH = 0;
+int DISPLAY_MODE = 0; // the desired display mode on the HUD
 volatile int THROTTLE_SPEED = 0;
 
 // String output
@@ -158,6 +159,7 @@ void loop() {
   IGNITION = check_ignition();
   CVT_GUARD = check_guard();
   RFID_AUTH = check_rfid();
+  DISPLAY_MODE = check_display();
   
   // Set Brakes Always
   LEFT_BRAKE = set_left_brake();
@@ -197,8 +199,8 @@ void loop() {
   }
   
   // USB
-  sprintf(DATA_BUFFER, "{'run_mode':%d,'right_brake':%d,'left_brake':%d,'cvt_guard':%d,'seat':%d,'hitch':%d,'ignition':%d}", RUN_MODE, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, SEAT_KILL, HITCH_KILL, IGNITION);
-  sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d,'task':%s}", UID, DATA_BUFFER, checksum(),PUSH);
+  sprintf(DATA_BUFFER, "{'run_mode':%d,'display_mode':%d,'right_brake':%d,'left_brake':%d,'cvt_guard':%d,'seat':%d,'hitch':%d,'ignition':%d}", RUN_MODE, DISPLAY_MODE, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, SEAT_KILL, HITCH_KILL, IGNITION);
+  sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(),PUSH);
   Serial.println(OUTPUT_BUFFER);
 }
 
@@ -210,7 +212,7 @@ void set_throttle(void) {
 
 // Right Brake
 // Returns true if the brake interlock is engaged
-boolean set_right_brake(void) {
+int set_right_brake(void) {
   int val = analogRead(RIGHT_BRAKE_PIN); // read right brake signal
   int output = map(BRAKES_VMIN, BRAKES_VMAX, 0, 400, val);  // map the brakes power output to 0-400
    
@@ -224,16 +226,16 @@ boolean set_right_brake(void) {
   
   // Check interlock
   if  (val >= BRAKES_VTHRESH) {
-    return true;
+    return 1;
   }
   else {
-    return false;
+    return 0;
   }
 }
 
 // Left brake
 // Returns true if the brake interlock is engaged
-boolean set_left_brake(void) {
+int set_left_brake(void) {
   int val = analogRead(LEFT_BRAKE_PIN); // read left brake signal
   int output = map(BRAKES_VMIN, BRAKES_VMAX, 0, 400, val); // linearly map the brakes power output to 0-400
   
@@ -247,21 +249,36 @@ boolean set_left_brake(void) {
   
   // Check interlock
   if  (val >= BRAKES_VTHRESH) {
-    return true;
+    return 1;
   }
   else {
-    return false;
+    return 0;
+  }
+}
+
+// Check Display
+int check_display(void) {
+  if  (digitalRead(DISPLAY_MODE_PIN)) {
+    if (digitalRead(DISPLAY_MODE_PIN)) {
+      return 1;
+    }
+    else {
+      return 0;
+    }
+  }
+  else {
+    return 0;
   }
 }
 
 // Check RFID
-boolean check_rfid(void) {
+int check_rfid(void) {
   Serial3.write(RFID_READ);
   if (Serial3.read() >= 0) {
-    return true;
+    return 1;
   }
   else {
-    return false;
+    return 0;
   }
 }
 
@@ -276,92 +293,92 @@ int checksum() {
 }
 
 // Check Ignition
-boolean check_ignition(void) {
+int check_ignition(void) {
   if  (digitalRead(IGNITION_PIN)) {
     if (digitalRead(IGNITION_PIN)) {
-      return true;
+      return 1;
     }
     else {
-      return false;
+      return 0;
     }
   }
   else {
-    return false;
+    return 0;
   }
 }
 
 // Check Guard --> Returns true if guard open
-boolean check_guard(void) {
+int check_guard(void) {
   if (analogRead(CVT_GUARD_PIN) >= CVT_GUARD_THRESH) {
     if (analogRead(CVT_GUARD_PIN) >= CVT_GUARD_THRESH) {
-      return true;
+      return 1;
     }
     else {
-      return false;
+      return 0;
     }
   }
   else {
-    return false;
+    return 0;
   }
 }
 
 // Check Seat() --> Returns true if seat kill engaged
-boolean check_seat(void) {
+int check_seat(void) {
   if (digitalRead(SEAT_KILL_PIN)) {
     if (digitalRead(SEAT_KILL_PIN)) {
-      return true;
+      return 1;
     }
     else {
-      return false;
+      return 0;
     }
   }
   else {
-    return false;
+    return 0;
   }
 }
 
 // Check Trigger
-boolean check_trigger(void) {
+int check_trigger(void) {
   if (digitalRead(TRIGGER_KILL_PIN)) {
     if (digitalRead(TRIGGER_KILL_PIN)) {
-      return true;
+      return 1;
     }
     else {
-      return false;
+      return 0;
     }
   }
   else {
-    return false;
+    return 0;
   }
 }
 
 // Check Hitch
-boolean check_hitch(void) {
+int check_hitch(void) {
   if (digitalRead(HITCH_KILL_PIN)) {
     if (digitalRead(HITCH_KILL_PIN)) {
-      return true;
+      return 1;
     }
     else {
-      return false;
+      return 0;
     }
   }
   else {
-    return false;
+    return 0;
   }
 }
 
 // Check Button
-boolean check_button(void) {
+int check_button(void) {
   if (digitalRead(BUTTON_KILL_PIN)) {
     if (digitalRead(BUTTON_KILL_PIN)) {
-      return true;
+      return 1;
     }
     else {
-      return false;
+      return 0;
     }
   }
   else {
-    return false;
+    return 0;
   }
 }
 

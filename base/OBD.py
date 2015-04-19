@@ -106,33 +106,49 @@ class WatchDog:
             if uid == 'HUD':
                 #! TODO: Respond to ERRORS from the HUD (if any ...)
                 if event['task'] == 'error':
-                    response = self.generate_event('OBD', 'error', {})
+                    response = self.generate_event('OBD', 'error_resp', {})
                 elif event['task'] == 'pull':
-                    response = self.generate_event('OBD', 'pull', self.data)
+                    response = self.generate_event('OBD', 'pull_resp', self.data)
                 else:
                     raise ValueError('Unrecognized task for HUD request')
             elif uid == 'CMQ':
                 #! TODO: Respond to ERRORS from the CMQ
                 if event['task'] == 'error': # check if ERROR
-                    response = self.generate_event('OBD', 'error', {})
+                    response = self.generate_event('OBD', 'error_resp', {})
                 elif event['task'] == 'push':
-                    response = self.generate_event('OBD', 'push', 'ok')
+                    response = self.generate_event('OBD', 'push_resp', {})
                 else:
                     raise ValueError('Unrecognized task for CMQ request')
-            elif (uid == 'VDC') or (uid == 'ESC') or (uid == 'TCS'):
+            elif uid == 'VDC':
                 if event['task'] == 'error': # check if ERROR
-                    response = self.generate_event('OBD', 'error', {})
+                    response = self.generate_event('OBD', 'error_resp', {})
                 elif event['task'] == 'push':
                     self.data.update(event['data'])  # Set incoming data to the global "data" object
-                    response = self.generate_event('OBD', 'push', 'ok')
+                    response = self.generate_event('OBD', 'push_resp', {})
                 else:
-                    raise ValueError('Unrecognized task for ESC/VDC/TCS request')
+                    raise ValueError('Unrecognized task for VDC')
+            elif uid == 'ESC':
+                if event['task'] == 'error': # check if ERROR
+                    response = self.generate_event('OBD', 'error_resp', {})
+                elif event['task'] == 'push':
+                    self.data.update(event['data'])  # Set incoming data to the global "data" object
+                    response = self.generate_event('OBD', 'push_resp', {})
+                else:
+                    raise ValueError('Unrecognized task from ESC')
+            elif uid == 'TCS':
+                if event['task'] == 'error': # check if ERROR
+                    response = self.generate_event('OBD', 'error_resp', {})
+                elif event['task'] == 'push':
+                    self.data.update(event['data'])  # Set incoming data to the global "data" object
+                    response = self.generate_event('OBD', 'push_resp', {})
+                else:
+                    raise ValueError('Unrecognized task for TCS')
             elif uid == 'CV6':
                 if event['task'] == 'error': # check if ERROR
-                    response = self.generate_event('OBD', 'error', {})
+                    response = self.generate_event('OBD', 'error_resp', {})
                 elif event['task'] == 'push':
                     self.data.update(event['data'])  # Set incoming data to the global "data" object
-                    response = self.generate_event('OBD', 'push', 'ok')
+                    response = self.generate_event('OBD', 'push_resp', {})
                 else:
                     raise ValueError('Unrecognized task for CV6 request')
             else:

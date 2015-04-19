@@ -165,7 +165,7 @@ void loop() {
   
   // Output string buffer
   sprintf(DATA_BUFFER, "{'driveshaft_rpm':%d,'wheel_rpm':%d,'engine_rpm':%d,'cvt_ratio':%d,'pull_mode':%d}", driveshaft_rpm, wheel_rpm,  engine_rpm, cvt_ratio, PULL_MODE);
-  sprintf(OUTPUT_BUFFER, "{'uid':'%s',data':%s,'chksum':%d,'task':%s}", UID, DATA_BUFFER, checksum(), PUSH);
+  sprintf(OUTPUT_BUFFER, "{'uid':'%s',data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
 }
 

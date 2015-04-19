@@ -100,6 +100,7 @@ class SafeMode:
                     pretty_print('HUD', 'Updating Labels: %s' % str(event['data']))
                     event['time'] = time.time()
                     data = event['data'] #! the event determines which labels are changed
+                    #!TODO Add handler for changing the display mode (i.e. from the ESC 'display_mode' key-val)
                     for name in data.keys():
                         try:
                             label_val = data[name]

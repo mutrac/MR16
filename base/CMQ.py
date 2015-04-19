@@ -1,7 +1,11 @@
 """
 Controller Message Query (CMQ)
+
 This class is responsible for managing the controller network.
 
+NOTE: The CMQ system is built such that the OBD is not explicitly necessary for the
+CMQ to handle inter-controller message passing, which is why the CMQ takes a 
+rule-base as one of it's required configuration settings.
 """
 
 # Dependencies
@@ -18,7 +22,7 @@ from itertools import cycle
 # Useful Functions 
 def pretty_print(task, data):
     date = datetime.strftime(datetime.now(), '%d/%b/%Y:%H:%M:%S')
-    print("%s %s %s" % (date, task, data))
+    print("[%s] %s %s" % (date, task, data))
 
 def save_config(config, filename):
     with open(filename, 'w') as jsonfile:
@@ -40,7 +44,7 @@ Controller Class
 This is a USB device which is part of a MIMO system
 """
 class Controller:
-    def __init__(self, uid, name, baud=9600, timeout=0.001, rules=[], port_attempts=5, read_attempts=10):
+    def __init__(self, uid, name, baud=9600, timeout=1.0, rules=[], port_attempts=3, read_attempts=10):
         self.name = name
         self.uid = uid # e.g. VDC
         self.baud = baud
@@ -54,11 +58,12 @@ class Controller:
                 self.name = name + str(i) # e.g. /dev/ttyACM1
                 pretty_print('CMQ', 'attempting to attach %s on %s' % (self.uid, self.name))
                 self.port = serial.Serial(self.name, self.baud, timeout=self.timeout)
-                time.sleep(1)
+                time.sleep(2)
                 for j in range(read_attempts):
                     string = self.port.readline()
-                    if string is not None:
-                        try:    
+                    if string is not (None or ''):
+                        pretty_print('CMQ', 'read: %s' % string)
+                        try:
                             data = ast.literal_eval(string)
                             if data['uid'] == self.uid:
                                 pretty_print('CMQ', 'found matching UID')
@@ -139,11 +144,10 @@ class CMQ:
         pretty_print('CMQ', 'Listening for %s' % dev.name)
         try:
             dump = dev.port.readline()
-            pretty_print('CMQ', 'Read: %s' % str(dump))
             event = ast.literal_eval(dump)
             if not self.checksum(event):  #! TODO: check sum here?
                 return self.generate_event('CMQ', 'error', '%s failed checksum' % dev.name)
-            pretty_print('CMQ', 'Received: %s' % str(event))
+            pretty_print('CMQ', 'Read: %s' % str(event))
         except Exception as e:
             return self.generate_event('CMQ', 'error', 'No data from %s' % dev.name)
         
@@ -175,13 +179,15 @@ class CMQ:
                         pretty_print('CMQ', 'Failed to follow rule: %s' % desc)
         return event
         
-    # Listen All 
+    # Listen for data from all arduino controllers
+    # Arguments: None
+    # Returns: List of each successfully parsed event
     def listen_all(self):
         if self.controllers:
             events = []
-            for c in self.controllers.values(): # get each controller in network
+            for c in self.controllers.values(): # get name of each controller in network
                 try:
-                    e = self.listen(c)
+                    e = self.listen(c) # listen for event
                     events.append(e)
                 except Exception as error:
                     events.append(self.generate_event("CMQ", 'error', str(error)))
@@ -189,7 +195,7 @@ class CMQ:
         else:
             return [self.generate_event("CMQ", 'error', 'Empty Network!')]
     
-    # List controllers
+    # List all arduino controllers in the network
     def list_controllers(self):
         return self.controllers.keys()
         
@@ -204,9 +210,9 @@ class CMQ:
         }
         return event
     
-    # Check sum
-    # TODO something is wrong and the checksums are different. check arduino to
-    # ensure that it is doing the proper sum
+    # Compares the Check sum of an event from a controller to the proper value
+    # Arguments: <Event>
+    # Returns: True if it passes the checksum, False if otherwise
     def checksum(self, event):
         try:
             chksum = 0
@@ -237,19 +243,12 @@ class CMQ:
                             dump = self.zmq_client.recv(zmq.NOBLOCK) # zmq.NOBLOCK
                             response = json.loads(dump)
                             pretty_print('CMQ', 'Received: %s' % str(response))
-                            #! TODO handle response from the host
-                            if response['task'] == 'handler':
-                                pass
-                                """
-                                This is where you could put cool stuff like
-                                updating controllers, etc.
-                                """
-                            if response['task'] == 'status':
-                                pass
-                                """
-                                This is where you could handle different status
-                                related tasks.
-                                """
+                            #! TODO handle any fancy push/pull responses from the host
+                            """
+                            CURRENTLY THIS SECTION DOES NOTHING
+                            IN THE FUTURE, THE OBD WILL BE ABLE TO ROUTE TESTING
+                            AND OTHER DIAGNOSTIC COMMANDS TO THE CMQ
+                            """
                         else:
                             pretty_print('CMQ', 'Poller Timeout')
                     else:
