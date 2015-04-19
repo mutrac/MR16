@@ -60,7 +60,7 @@ class WatchDog:
             self.db = self.mongo_client[self.db_name]
             self.pretty_print('OBD', 'Initialized DB on %s:%d' % (addr, port))
         except Exception as error:
-            self.pretty_print('OBD_ERR', str(error))
+            self.pretty_print('OBD', str(error))
 
     ## Initialize Logging
     def init_logging(self):
@@ -68,7 +68,7 @@ class WatchDog:
             self.log_path = os.path.join(os.getcwd(), 'log', datetime.strftime(datetime.now(), self.config['LOG_FILE']))
             logging.basicConfig(filename=self.log_path, level=logging.DEBUG)
         except Exception as error:
-            self.pretty_print('OBD_ERR', str(error))
+            self.pretty_print('OBD', str(error))
    
     ## Generate Event
     def generate_event(self, uid, task, data):
@@ -79,11 +79,21 @@ class WatchDog:
             'time' : datetime.strftime(datetime.now(), "%H:%M:%S.%f"),
         }
         return e
-        
+    
+    ## Lookup User
+    # Argument : the RFID authentication key
+    # Returns: the name of the user associated with that RFID key
+    def lookup_user(self, rfid_key):
+        try:
+            return self.config['USERS'][rfid_key]
+        except Exception as error:
+            self.pretty_print('OBD', str(error))
+            return "unknown" #! TODO need to handle cases where the RFID key doesn't match user-base
+            
     ## Add Log Entry
     def add_log_entry(self, event):
         try:
-            task = event['task']
+            task = event['uid']
             uuid = self.db[task].insert(event)
             self.pretty_print('OBD', 'Stored to %s/%s' % (task, str(uuid)))
         except Exception as error:
