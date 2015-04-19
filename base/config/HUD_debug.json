@@ -5,21 +5,12 @@
     "state": "normal", 
     "pad": 3,
     "labels": {
-        "time": {
-            "font_size": 24, 
-            "initial_value": "", 
-            "format": "time: %s", 
-            "bg_color": "#FFFFFF", 
-            "y": 20, 
-            "x": 0, 
-            "font_type": "Helvetica"
-        },
         "cart_mode": {
             "font_size": 24, 
             "initial_value": "", 
             "format": "cart_mode: %s", 
             "bg_color": "#FFFFFF", 
-            "y": 60, 
+            "y": 20, 
             "x": 0, 
             "font_type": "Helvetica"
         },
@@ -28,7 +19,7 @@
             "initial_value": "", 
             "format": "str: %s", 
             "bg_color": "#FFFFFF", 
-            "y": 100, 
+            "y": 60, 
             "x": 0, 
             "font_type": "Helvetica"
         },
@@ -37,7 +28,7 @@
             "initial_value": "", 
             "format": "act: %s", 
             "bg_color": "#FFFFFF", 
-            "y": 140, 
+            "y": 100, 
             "x": 0, 
             "font_type": "Helvetica"
         },
@@ -46,7 +37,25 @@
             "initial_value": "", 
             "format": "susp: %s", 
             "bg_color": "#FFFFFF", 
+            "y": 140, 
+            "x": 0, 
+            "font_type": "Helvetica"
+        },
+        "cart_fwd": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "cart_fwd: %s", 
+            "bg_color": "#FFFFFF", 
             "y": 180, 
+            "x": 0, 
+            "font_type": "Helvetica"
+        },
+        "cart_bwd": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "cart_bwd: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 220, 
             "x": 0, 
             "font_type": "Helvetica"
         },
@@ -55,8 +64,8 @@
             "initial_value": "", 
             "format": "t_avg: %s", 
             "bg_color": "#FFFFFF", 
-            "y": 220, 
-            "x": 0, 
+            "y": 20, 
+            "x": 300, 
             "font_type": "Helvetica"
         },
         "v_avg": {
@@ -64,8 +73,8 @@
             "initial_value": "", 
             "format": "v_avg: %s", 
             "bg_color": "#FFFFFF", 
-            "y": 260, 
-            "x": 0, 
+            "y": 60, 
+            "x": 300, 
             "font_type": "Helvetica"
         },
         "engine_rpm": {
@@ -73,8 +82,8 @@
             "initial_value": "", 
             "format": "engine_rpm: %s", 
             "bg_color": "#FFFFFF", 
-            "y": 300, 
-            "x": 0, 
+            "y": 20, 
+            "x": 600, 
             "font_type": "Helvetica"
         },
         "driveshaft_rpm": {
@@ -82,8 +91,8 @@
             "initial_value": "", 
             "format": "driveshaft_rpm: %s", 
             "bg_color": "#FFFFFF", 
-            "y": 300, 
-            "x": 0, 
+            "y": 60, 
+            "x": 600, 
             "font_type": "Helvetica"
         },
         "wheel_rpm": {
@@ -91,28 +100,108 @@
             "initial_value": "", 
             "format": "wheel_rpm: %s", 
             "bg_color": "#FFFFFF", 
-            "y": 340, 
-            "x": 0, 
+            "y": 100, 
+            "x": 600, 
             "font_type": "Helvetica"
         },
         "cvt_ratio": {
             "font_size": 24, 
             "initial_value": "", 
-           "format": "cvt_ratio: %s", 
-           "bg_color": "#FFFFFF", 
-           "y": 380, 
-           "x": 0, 
-           "font_type": "Helvetica"
+            "format": "cvt_ratio: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 140, 
+            "x": 600, 
+            "font_type": "Helvetica"
         },
         "pull_mode": {
             "font_size": 24, 
             "initial_value": "", 
-           "format": "pull_mode: %s", 
-           "bg_color": "#FFFFFF", 
-           "y": 380, 
-           "x": 0, 
-           "font_type": "Helvetica"
+            "format": "pull_mode: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 180, 
+            "x": 600, 
+            "font_type": "Helvetica"
+        },
+        "run_mode": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "run_mode: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 20, 
+            "x": 900, 
+            "font_type": "Helvetica"
+        },
+        "display_mode": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "display_mode: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 60, 
+            "x": 900, 
+            "font_type": "Helvetica"
+        },
+        "right_brake": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "right_brake: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 100, 
+            "x": 900, 
+            "font_type": "Helvetica"
+        },
+        "left_brake": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "left_brake: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 140, 
+            "x": 900, 
+            "font_type": "Helvetica"
+        },
+        "cvt_guard": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "cvt_guard: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 180, 
+            "x": 900, 
+            "font_type": "Helvetica"
+        },
+        "seat": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "seat: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 220, 
+            "x": 900, 
+            "font_type": "Helvetica"
+        },
+        "hitch": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "hitch: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 260, 
+            "x": 900, 
+            "font_type": "Helvetica"
+        },
+        "ignition": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "ignition: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 300, 
+            "x": 900, 
+            "font_type": "Helvetica"
+        },
+        "rfid": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "rfid: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 340, 
+            "x": 900, 
+            "font_type": "Helvetica"
         }
-        
     }
 }
