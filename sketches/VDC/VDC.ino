@@ -3,6 +3,12 @@
   McGill ASABE Tractor Team
   Revision 2016
   
+  Network Info:
+  The VDC reads sensors for the steering wheel and actuator position via potentiometers,
+  and tracks the suspension position via the hall effect sensor mounted on the front axle. 
+  
+  However, information for DBS control is best handled via the CMQ (see CMQ Commands).
+    
   Requires: Arduino UNO with Pololu DualVNH5019 Motor Shield
 */
 
@@ -11,6 +17,11 @@
 #include <DualVNH5019MotorShield.h>
 
 /* --- GLOBAL CONSTANTS --- */
+// CMQ Commands (single letter requires single quotes)
+const char FWD_CMD = 'F'; // move cart forward
+const char BWD_CMD = 'B'; // move cart backward
+const char MOD_CMD = 'M'; // change cart mode
+
 // USB/CanBUS Info
 const char UID[] = "VDC";
 const char PULL[] = "pull";
@@ -25,9 +36,6 @@ const int ACTUATOR_POSITION_PIN = A1;
 const int SUSPENSION_POSITION_PIN = A2;
 
 // Digital Inputs
-const int CART_FORWARD_PIN = 2;
-const int CART_BACKWARD_PIN = 3;
-const int CART_MODE_PIN = 4;
 
 /* --- GLOBAL VARIABLES --- */
 // Create sensor values
@@ -35,8 +43,8 @@ int CART_MODE = 0;
 int STR_POS = 0;
 int ACT_POS = 0;
 int SUSP_POS = 0;
-boolean CART_FORWARD = false;
-boolean CART_BACKWARD = false;
+int CART_FORWARD = 0;
+int CART_BACKWARD = 0;
 
 // Create character buffers
 char OUTPUT_BUFFER[OUTPUT_SIZE];
@@ -55,9 +63,6 @@ void setup() {
   Serial.begin(BAUD);
   
   // Initialize Inputs
-  pinMode(CART_FORWARD_PIN, INPUT);
-  pinMode(CART_BACKWARD_PIN, INPUT);
-  pinMode(CART_MODE_PIN, INPUT);
   pinMode(STEERING_POSITION_PIN, INPUT);
   pinMode(ACTUATOR_POSITION_PIN, INPUT);
   pinMode(SUSPENSION_POSITION_PIN, INPUT);
@@ -90,20 +95,31 @@ void loop() {
   /* --- END Steering Subsystem --- */
   
   /* --- START Ballast Subsystm --- */
-  // Get Ballast system parameters and recompute PID
+  // Get Ballast system parameters and recompute PID (Always do this on an iteration)
   SUSP_POS = analogRead(SUSPENSION_POSITION_PIN);
-  CART_FORWARD = digitalRead(CART_FORWARD_PIN);
-  CART_BACKWARD = digitalRead(CART_BACKWARD_PIN);
   BALLAST_IN = double(SUSP_POS);
   BALLAST_PID.Compute();
  
-  // Set cart mode
-  if (digitalRead(CART_MODE_PIN)) {
-    if (CART_MODE) {
-      CART_MODE = 0;
-    }
-    else {
-      CART_MODE = 1;
+  // Get next serial cart control commands
+  if (Serial.available()) {
+    char c = Serial.read();
+    switch (c) {
+      case FWD_CMD:
+        CART_FORWARD = 1;
+        break;
+      case BWD_CMD:
+        CART_BACKWARD = 1;
+        break;
+      case MOD_CMD:
+        if (CART_MODE) {
+          CART_MODE = 0;
+        }
+        else {
+          CART_MODE = 1;
+        }
+        break;
+      default:
+        break;
     }
   }
   
@@ -132,6 +148,9 @@ void loop() {
   sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
  
+  // Reset values (VERY IMPORTANT or else cart would get stuck on/off)
+  CART_FORWARD = 0;
+  CART_BACKWARD = 0;
 }
 
 /* --- SYNCHRONOUS TASKS --- */
@@ -144,3 +163,4 @@ int checksum() {
   int val = sum % 256;
   return val;
 }
+
