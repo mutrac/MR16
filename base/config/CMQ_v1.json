@@ -12,7 +12,31 @@
                 ],
                 "description" : "Brakes pressed, don't engage CVT",
                 "target" : "TCS",
-                "command" : "C1"
+                "command" : "C"
+            },
+            {   
+                "conditions" : [
+                    ["cart_fwd", 1]
+                ],
+                "description" : "Cart forward pressed",
+                "target" : "VDC",
+                "command" : "F"
+            },
+            {   
+                "conditions" : [
+                    ["cart_bwd", 1]
+                ],
+                "description" : "Cart backward pressed",
+                "target" : "VDC",
+                "command" : "B"
+            },
+            {   
+                "conditions" : [
+                    ["cart_mode", 1]
+                ],
+                "description" : "Cart mode pressed",
+                "target" : "VDC",
+                "command" : "M"
             }
         ]
     },
