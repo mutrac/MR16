@@ -32,23 +32,25 @@ const int BUTTON_KILL_PWR = 26;
 
 // Joystick (Digital) 
 // Note 1: in this revision, the joystick gives input to multiple controllers
-const int TRIGGER_KILL_PIN = 30;
-const int PULL_PIN = 31;
-const int DBS_PIN = 32;
+const int TRIGGER_KILL_PIN = 31;
+const int PULL_PIN = 32;
 const int IGNITION_PIN = 33;
 const int DISPLAY_MODE_PIN = 34;
+const int CART_FORWARD_PIN = 35;
+const int CART_BACKWARD_PIN = 36;
+const int CART_MODE_PIN = 37;
 
-// Interrupts
+// Throttle Interrupts
 const int THROTTLE_UP_INT = 14; // These are set to an interrupt
 const int THROTTLE_DOWN_INT = 15; // These are set to an interrupt
 
-// Relays
-const int STOP_RELAY_PIN = 35;
-const int REGULATOR_RELAY_PIN = 36;
-const int STARTER_RELAY_PIN = 37;
-const int ATOM_RELAY_PIN = 38;
+// Relay Pins
+const int STOP_RELAY_PIN = 38;
+const int REGULATOR_RELAY_PIN = 39;
+const int STARTER_RELAY_PIN = 40;
+const int ATOM_RELAY_PIN = 41;
 
-// Analog Input
+// Analog Input Pins
 // A0 Reserved for DualVNH5019
 // A1 Reserved for DualVNH5019
 const int LEFT_BRAKE_PIN = A2;
@@ -63,8 +65,7 @@ const int KILL_WAIT = 1000;
 const int IGNITION_WAIT = 1000;
 const int STANDBY_WAIT = 1000;
 
-/* --- GLOBAL VARIABLES --- */
-// Brakes
+// Brake variables
 int BRAKES_VTHRESH = 512;
 int BRAKES_MILLIAMP_THRESH = 15000;
 int BRAKES_VMIN = 0;
@@ -80,6 +81,7 @@ int THROTTLE_D = 2;
 // CVT Guard
 int CVT_GUARD_THRESH = 100;
 
+/* --- GLOBAL VARIABLES --- */
 // Peripheral values
 int SEAT_KILL = 0;
 int HITCH_KILL = 0;
@@ -92,6 +94,9 @@ int LEFT_BRAKE = 0;
 int RIGHT_BRAKE = 0;
 int RFID_AUTH = 0;
 int DISPLAY_MODE = 0; // the desired display mode on the HUD
+int CART_FORWARD = 0;
+int CART_BACKWARD = 0;
+int CART_MODE = 0;
 volatile int THROTTLE_SPEED = 0;
 
 // String output
@@ -125,7 +130,12 @@ void setup() {
   // Joystick Digital Input
   pinMode(TRIGGER_KILL_PIN, INPUT);
   pinMode(IGNITION_PIN, INPUT);
-
+  pinMode(CART_FORWARD_PIN, INPUT);
+  pinMode(CART_BACKWARD_PIN, INPUT);
+  pinMode(CART_MODE_PIN, INPUT);
+  pinMode(PULL_PIN, INPUT);
+  pinMode(DISPLAY_MODE_PIN, INPUT);
+  
   // Relays
   pinMode(STOP_RELAY_PIN, OUTPUT);
   pinMode(REGULATOR_RELAY_PIN, OUTPUT);
@@ -151,15 +161,20 @@ void setup() {
 /* --- LOOP --- */
 void loop() {
   
-  // Get Inputs Always
-  SEAT_KILL = check_seat();
-  HITCH_KILL = check_hitch();
-  BUTTON_KILL = check_button();
-  TRIGGER_KILL = check_trigger();
-  IGNITION = check_ignition();
+  // Check switches
+  SEAT_KILL = check_switch(SEAT_KILL_PIN);
+  HITCH_KILL = check_switch(HITCH_KILL_PIN);
+  BUTTON_KILL = check_switch(BUTTON_KILL_PIN);
+  TRIGGER_KILL = check_switch(TRIGGER_KILL_PIN);
+  IGNITION = check_switch(IGNITION_PIN);
+  DISPLAY_MODE = check_switch(DISPLAY_MODE_PIN);
+  CART_FORWARD = check_switch(CART_FORWARD_PIN);
+  CART_BACKWARD = check_switch(CART_BACKWARD_PIN);
+  CART_MODE = check_switch(CART_MODE_PIN);
+  
+  // Check non-switches
   CVT_GUARD = check_guard();
   RFID_AUTH = check_rfid();
-  DISPLAY_MODE = check_display();
   
   // Set Brakes Always
   LEFT_BRAKE = set_left_brake();
@@ -199,7 +214,7 @@ void loop() {
   }
   
   // USB
-  sprintf(DATA_BUFFER, "{'run_mode':%d,'display_mode':%d,'right_brake':%d,'left_brake':%d,'cvt_guard':%d,'seat':%d,'hitch':%d,'ignition':%d,'rfid':'%d'}", RUN_MODE, DISPLAY_MODE, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, SEAT_KILL, HITCH_KILL, IGNITION, RFID_AUTH);
+  sprintf(DATA_BUFFER, "{'run_mode':%d,'display_mode':%d,'right_brake':%d,'left_brake':%d,'cvt_guard':%d,'seat':%d,'hitch':%d,'ignition':%d,'rfid':'%d','cart_mode':%d,'cart_fwd':%d,'cart_bwd':%d}", RUN_MODE, DISPLAY_MODE, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, SEAT_KILL, HITCH_KILL, IGNITION, RFID_AUTH, CART_MODE, CART_FORWARD, CART_BACKWARD);
   sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(),PUSH);
   Serial.println(OUTPUT_BUFFER);
 }
@@ -256,10 +271,10 @@ int set_left_brake(void) {
   }
 }
 
-// Check Display
-int check_display(void) {
-  if  (digitalRead(DISPLAY_MODE_PIN)) {
-    if (digitalRead(DISPLAY_MODE_PIN)) {
+// Check Display Mode
+int check_switch(int pin_num) {
+  if  (digitalRead(pin_num)) {
+    if (digitalRead(pin_num)) {
       return 1;
     }
     else {
