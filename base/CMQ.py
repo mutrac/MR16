@@ -157,26 +157,26 @@ class CMQ:
             try:
                 target = r['target']
             except Exception as e:
-                pretty_print('CMQ', 'Rule does not have a target')
+                pretty_print('CMQ', 'ERROR: %s' % 'Rule does not have a target')
             try:
                 cmd = r['command']
             except Exception as e:
-                pretty_print('CMQ', 'Rule does not have a command')
+                pretty_print('CMQ', 'ERROR: %s' % 'Rule does not have a command')
             try:
                 desc = r['description']
             except Exception as e:
-                pretty_print('CMQ', 'Rule does not have description')
+                pretty_print('CMQ', 'ERROR: %s' % 'Rule does not have description')
             try:
                 target_dev = self.controllers[target]
             except Exception as e:
-                pretty_print('CMQ', 'Target does not exist: %s' % target)
+                pretty_print('CMQ', 'ERROR: Target %s does not exist' % target)
             for [key,val] in r['conditions']:
                 if (data[key] == val): # TODO: might have to handle Unicode
                     try:
                         pretty_print('CMQ', 'Routing %s command to %s' % (str(cmd), str(target)))
                         target_dev.port.write(msg)
                     except Exception as e:
-                        pretty_print('CMQ', 'Failed to follow rule: %s' % desc)
+                        pretty_print('CMQ', 'ERROR: Failed to follow rule -- %s' % desc)
         return event
         
     # Listen for data from all arduino controllers
@@ -190,7 +190,7 @@ class CMQ:
                     e = self.listen(c) # listen for event
                     events.append(e)
                 except Exception as error:
-                    events.append(self.generate_event("CMQ", 'error', str(error)))
+                    events.append(self.generate_event("CMQ", 'error', str(error))) # create 'error' event
             return events
         else:
             return [self.generate_event("CMQ", 'error', 'Empty Network!')]
@@ -225,7 +225,7 @@ class CMQ:
             else:
                 return False
         except Exception as e:
-            pretty_print('CMQ', str(e))
+            pretty_print('CMQ', 'ERROR: %s' % str(e))
         
     # Run Indefinitely
     def run_async(self):
@@ -250,20 +250,20 @@ class CMQ:
                             AND OTHER DIAGNOSTIC COMMANDS TO THE CMQ
                             """
                         else:
-                            pretty_print('CMQ', 'Poller Timeout')
+                            pretty_print('CMQ', 'WARNING: Poller Timeout')
                     else:
-                        pretty_print('CMQ', 'Socket Timeout')
+                        pretty_print('CMQ', 'WARNING: Socket Timeout')
                 except Exception as error:
-                    pretty_print('CMQ', str(error))
+                    pretty_print('CMQ', 'ERROR: %s' % str(error))
     
     # Reset server socket connection
     def reset(self):
-        pretty_print('CMQ RST','Resetting CMQ connection to OBD')
+        pretty_print('CMQ','Resetting CMQ connection to OBD')
         try:
             self.zmq_client = self.zmq_context.socket(zmq.REQ)
             self.zmq_client.connect(self.addr)
         except Exception:
-            pretty_print('CMQ ERR', 'Failed to reset properly')
+            pretty_print('CMQ', 'ERROR: Failed to reset properly')
 
 if __name__ == '__main__':
     with open('config/CMQ_v1.json', 'r') as jsonfile:
