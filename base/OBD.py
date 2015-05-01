@@ -48,7 +48,7 @@ class WatchDog:
             self.socket.bind(self.config['CMQ_SERVER'])
             self.pretty_print('OBD', 'Initialized ZMQ host')
         except Exception as error:
-            self.pretty_print('OBD_ERR', str(error))
+            self.pretty_print('OBD_ERR', 'ERROR: %s' % str(error))
         
     ## Initialize DB
     def init_db(self):
@@ -60,7 +60,7 @@ class WatchDog:
             self.db = self.mongo_client[self.db_name]
             self.pretty_print('OBD', 'Initialized DB on %s:%d' % (addr, port))
         except Exception as error:
-            self.pretty_print('OBD', str(error))
+            self.pretty_print('OBD', 'ERROR: %s' % str(error))
 
     ## Initialize Logging
     def init_logging(self):
@@ -68,7 +68,7 @@ class WatchDog:
             self.log_path = os.path.join(os.getcwd(), 'log', datetime.strftime(datetime.now(), self.config['LOG_FILE']))
             logging.basicConfig(filename=self.log_path, level=logging.DEBUG)
         except Exception as error:
-            self.pretty_print('OBD', str(error))
+            self.pretty_print('OBD', 'ERROR: %s' % str(error))
    
     ## Generate Event
     def generate_event(self, uid, task, data):
@@ -87,7 +87,7 @@ class WatchDog:
         try:
             return self.config['USERS'][rfid_key]
         except Exception as error:
-            self.pretty_print('OBD', str(error))
+            self.pretty_print('OBD', 'ERROR: %s' % str(error))
             return "unknown" #! TODO need to handle cases where the RFID key doesn't match user-base
             
     ## Add Log Entry
@@ -97,8 +97,8 @@ class WatchDog:
             uuid = self.db[task].insert(event)
             self.pretty_print('OBD', 'Stored to %s/%s' % (task, str(uuid)))
         except Exception as error:
-            self.pretty_print('OBD', str(error))
-    
+            self.pretty_print('OBD', 'ERROR: %s' % str(error))
+            
     ## Listen for Messages
     #! TODO Include setting warnings for the debugger page
     def listen(self):
@@ -167,7 +167,7 @@ class WatchDog:
             self.socket.send(dump) # send response
             self.pretty_print('OBD', 'Response: %s' % str(response))
         except Exception as error:
-            self.pretty_print('OBD', str(error))
+            self.pretty_print('OBD', 'ERROR: %s' % str(error))
     
     """
     Handler Functions
@@ -186,7 +186,7 @@ class WatchDog:
             #! Handle requests, such as for logs of pulls
             pass
         except Exception as error:
-            self.pretty_print('OBD', str(error))
+            self.pretty_print('OBD', 'ERROR: %s' % str(error))
         return None
 
 if __name__ == '__main__':

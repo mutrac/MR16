@@ -79,8 +79,8 @@ class V6:
             # Use the Brute Force matcher
             else:
                 self.matcher = cv2.BFMatcher()
-        except Exception as e:
-            print str(e)
+        except Exception as error:
+            pretty_print('CV6', 'ERROR: %s' % str(e))
             raise Exception("Failed to generate a matcher")
     """
     Close
@@ -210,7 +210,7 @@ class V6:
                             pt2 = (pt2.pt[0], pt2.pt[1])
                             matching_pairs.append((pt1, pt2))
                 except Exception as e:
-                    print str(e)
+                    pretty_print('CV6', 'ERROR: %s' % str(e))
             return matching_pairs
         else:
             raise Exception("No matcher exists!")
@@ -326,7 +326,7 @@ class V6:
                     if cv2.waitKey(5) == 5:
                         break
             except Exception as e:
-                print str(e)
+                pretty_print('CV6', 'ERROR: %s' % str(e))
                 break
                 
     """
@@ -366,7 +366,7 @@ class V6:
                 else:
                     pass
             except Exception as err:
-                pretty_print('CV6', str(err))
+                pretty_print('CV6', 'ERROR: %s' % str(err))
         
 if __name__ == '__main__':
     ext = V6(capture=0)

@@ -86,7 +86,7 @@ class SafeMode:
             dump = json.dumps(request)
             self.zmq_client.send(dump)
         except Exception as error:
-            pretty_print('HUD', str(error))
+            pretty_print('HUD', 'ERROR: %s' % str(error))
         
         # Wait for response and map values to labels
         try:
@@ -109,14 +109,14 @@ class SafeMode:
                                 self.labels[name].set(label_txt)
                                 self.master.update_idletasks()
                         except KeyError as error:
-                            pretty_print('HUD', "label '%s' does not exist" % name)
+                            pretty_print('HUD', 'ERROR: label %s does not exist' % name)
                 else:
                     pretty_print('HUD', 'ERROR: Poller Timeout')
             else:
                 pretty_print('HUD', 'ERROR: Socket Timeout')
 
         except Exception as error:
-            pretty_print('HUD', str(error))
+            pretty_print('HUD', 'ERROR: %s' % str(error))
 
 if __name__ == '__main__':
     with open('config/HUD_debug.json', 'r') as jsonfile:
@@ -125,5 +125,6 @@ if __name__ == '__main__':
     while True:
         try:
             display.run_async()
-        except KeyboardInterrupt:
+        except KeyboardInterrupt as error:
+            pretty_print('HUD', 'ERROR: %s' % str(error))
             break
