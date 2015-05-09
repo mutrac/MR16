@@ -6,6 +6,7 @@
 /* --- Libraries --- */
 #include "PID_v1.h"
 #include "AFMotor.h"
+#include <RunningMedian.h>
 
 /* --- Global Constants --- */
 // CAN
@@ -42,21 +43,41 @@ const int STEPPER_MAX = 1024; // the encoder reading when the stepper is fully e
 const float CVT_RATIO_MAX = 4.13;
 const float CVT_RATIO_MIN = 0.77;
 
+// Differential Settings
+const float DIFF_RATIO_MAX = 3;
+const float DIFF_RATIO_MIN = 1;
+
+// Sample sets
+const int SPARKPLUG_SAMPLESIZE = 10;
+const int DRIVESHAFT_SAMPLESIZE = 10;
+const int WHEEL_SAMPLESIZE = 10;
+
 /* --- Global Variables --- */
+// Mode variables
 boolean PULL_MODE = 0;
 int CVT_POSITION = 0;
+float CVT_RATIO = CVT_RATIO_MIN;
+float DIFF_RATIO = DIFF_RATIO_MIN;
 
-// Manual PID
-double MANUAL_P=1, MANUAL_I=0.05, MANUAL_D=0.25;
-double MANUAL_SET, MANUAL_IN, MANUAL_OUT;
+// Manual mode PID
+double MANUAL_P = 1;
+double MANUAL_I = 0.05;
+double MANUAL_D = 0.25;
+double MANUAL_SET;
+double MANUAL_IN;
+double MANUAL_OUT;
 PID MANUAL_PID(&MANUAL_IN, &MANUAL_OUT, &MANUAL_SET, MANUAL_P, MANUAL_I, MANUAL_D, DIRECT);
 
-// Pull PID
-double PULL_P=1, PULL_I=0.05, PULL_D=0.25;
-double PULL_SET, PULL_IN, PULL_OUT;
+// Pull mode PID
+double PULL_P = 1;
+double PULL_I = 0.05;
+double PULL_D = 0.25;
+double PULL_SET;
+double PULL_IN;
+double PULL_OUT;
 PID PULL_PID(&PULL_IN, &PULL_OUT, &PULL_SET, PULL_P, PULL_I, PULL_D, DIRECT);
 
-// Stepper
+// Initialize stepper motor
 AF_Stepper STEPPER(STEPPER_RESOLUTION, STEPPER_TYPE); // TODO: find stepper resolution
 
 // Counters
@@ -65,13 +86,21 @@ volatile int DRIVESHAFT_PULSES = 0;
 volatile int WHEEL_PULSES = 0;
 volatile int ENCODER_PULSES = 0;
 
+int ENGINE_RPM = 0;
+int DRIVESHAFT_RPM = 0;
+int WHEEL_RPM = 0;
+
 // Char Buffers
 char OUTPUT_BUFFER[OUTPUT_SIZE];
 char DATA_BUFFER[DATA_SIZE];
 
 // Timers
-long TIME_A = millis();
-long TIME_B = millis();
+long TIME = millis();
+
+// Sample sets
+RunningMedian SPARKPLUG_HIST = RunningMedian(SPARKPLUG_SAMPLESIZE);
+RunningMedian DRIVESHAFT_HIST = RunningMedian(DRIVESHAFT_SAMPLESIZE);
+RunningMedian WHEEL_HIST = RunningMedian(WHEEL_SAMPLESIZE);
 
 /* --- Setup --- */
 void setup() {
@@ -110,15 +139,13 @@ void loop() {
   WHEEL_PULSES = 0;
   
   // Wait and get volatile values
-  TIME_A = millis();
+  TIME = millis();
   delay(INTERVAL);
-  TIME_B = millis();
-  int driveshaft_rpm =  DRIVESHAFT_PULSES / INTERVAL;
-  int sparkplug_rpm =  SPARKPLUG_PULSES / INTERVAL;
-  int engine_rpm =  2 * sparkplug_rpm;
-  int wheel_rpm =  WHEEL_PULSES / INTERVAL;
-  int cvt_ratio = sparkplug_rpm / driveshaft_rpm;
-  int differential_ratio = driveshaft_rpm / wheel_rpm;
+  DRIVESHAFT_RPM = DRIVESHAFT_PULSES / float(millis() - TIME);
+  ENGINE_RPM =  2 * SPARKPLUG_PULSES / float(millis() - TIME);
+  WHEEL_RPM =  WHEEL_PULSES / float(millis() - TIME);
+  CVT_RATIO = ENGINE_RPM / DRIVESHAFT_RPM;
+  DIFF_RATIO = DRIVESHAFT_RPM / WHEEL_RPM;
   
   // Read the position of the joystick
   CVT_POSITION = analogRead(CVT_POSITION_PIN);
@@ -131,7 +158,7 @@ void loop() {
   
   // Calculate AUTOMATIC controller output
   // In this mode, the engine RPM is maximized by reducing the cvt_ratio until the disengagement threshold is reached
-  PULL_IN = double(cvt_ratio);
+  PULL_IN = double(CVT_RATIO);
   PULL_SET = double(CVT_POSITION);
   PULL_PID.Compute();
    
@@ -164,7 +191,7 @@ void loop() {
   }
   
   // Output string buffer
-  sprintf(DATA_BUFFER, "{'driveshaft_rpm':%d,'wheel_rpm':%d,'engine_rpm':%d,'cvt_ratio':%d,'pull_mode':%d}", driveshaft_rpm, wheel_rpm,  engine_rpm, cvt_ratio, PULL_MODE);
+  sprintf(DATA_BUFFER, "{'driveshaft_rpm':%d,'wheel_rpm':%d,'engine_rpm':%d,'cvt_ratio':%d,'pull_mode':%d}", DRIVESHAFT_RPM, WHEEL_RPM,  ENGINE_RPM, CVT_RATIO, PULL_MODE);
   sprintf(OUTPUT_BUFFER, "{'uid':'%s',data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
 }

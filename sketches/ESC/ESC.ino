@@ -10,17 +10,17 @@
 #include "DallasTemperature.h"
 #include "OneWire.h"
 #include <PID_v1.h>
+#include <RunningMedian.h>
 
-/* --- GLOBAL CONSTANTS --- */
-// CAN
-const char UID[] = "ESC";
-const char PUSH[] = "push";
-const char PULL[] = "pull";
-const int BAUD = 9600;
-const int RFID_BAUD = 9600;
-const int OUTPUT_SIZE = 512;
-const int DATA_SIZE = 256;
-const int RFID_READ = 0x02;
+
+/* --- Global Constants --- */
+/// CAN
+
+
+/// Digital Pins
+// D14 Reserved for Serial2 RFID
+// D15 Reserved for Serial2 RFID
+const int LPH_SENSOR_PIN = 18;  // interrupt (#5) required
 
 // Failsafe Digital Input
 const int BUTTON_KILL_PIN = 22;
@@ -31,71 +31,93 @@ const int HITCH_KILL_PWR = 30;
 const int BUTTON_KILL_PWR = 32;
 
 // Joystick (Digital) 
-// Block 1 (pins 23 - 29)
 const int IGNITION_PIN = 23;
 const int TRIGGER_KILL_PIN = 25;
 const int PULL_PIN = 27;
-
-// Block 2 (pins 31 - 37)
+// D29 is a Blocked pin
 const int CART_FORWARD_PIN = 31;
 const int CART_BACKWARD_PIN = 33;
 const int CART_MODE_PIN = 35;
-
-// Block 3 (pins 39 - 45)
+// D37 is a Blocked pin
 const int THROTTLE_UP_PIN = 39; // These are set to an interrupt
 const int THROTTLE_DOWN_PIN = 41; // These are set to an interrupt
 const int RPM_UP_PIN = 43; // These are set to an interrupt
-
-// Block 4 (pins 47 - 53)
+// D45 is a Blocked pin
 const int RPM_DOWN_PIN = 47;
 const int DISPLAY_MODE_PIN = 49;
 
-// Relay Pins
-const int STOP_RELAY_PIN = 38;
-const int REGULATOR_RELAY_PIN = 39;
-const int STARTER_RELAY_PIN = 40;
-const int ATOM_RELAY_PIN = 41;
+// Relay Pins 
+const int STOP_RELAY_PIN = 38; // TODO: check pin number
+const int REGULATOR_RELAY_PIN = 40;
+const int STARTER_RELAY_PIN = 42;
+const int REBOOT_RELAY_PIN = 44;
 
-// Analog Input Pins
+// Additional Sensors
+const int TEMP_SENSOR_PIN = 46; // TODO: find actual pin number
+
+/// Analog Input Pins
 // A0 Reserved for DualVNH5019
 // A1 Reserved for DualVNH5019
-const int LEFT_BRAKE_PIN = A14;
-const int RIGHT_BRAKE_PIN = A15;
-const int CVT_GUARD_PIN = A4;
 const int THROTTLE_POS_PIN = A8;
 const int THROTTLE_MIN_PIN = A9;
 const int THROTTLE_MAX_PIN = A10;
+// A11 unused
+const int CVT_GUARD_PIN = A12;
+const int PSI_SENSOR_PIN = A13;
+const int LEFT_BRAKE_PIN = A14;
+const int RIGHT_BRAKE_PIN = A15;
 
-// Time Delays
-const int KILL_WAIT = 10;
-const int IGNITION_WAIT = 1000;
+/* --- Global Settings --- */ 
+/// CAN
+const char UID[] = "ESC";
+const char PUSH[] = "push";
+const char PULL[] = "pull";
+const int BAUD = 9600;
+const int OUTPUT_SIZE = 512;
+const int DATA_SIZE = 256;
+
+/// RFID
+const int RFID_BAUD = 9600;
+const int RFID_READ = 0x02;
+
+/// Time Delays
+const int KILL_WAIT = 1000;
+const int IGNITION_WAIT = 500;
 const int STANDBY_WAIT = 10;
+const int REBOOT_WAIT = 1000;
 
-// Brake variables
-int BRAKES_THRESHOLD = 512;
-int BRAKES_MILLIAMP_THRESH = 15000;
-int BRAKES_MIN = 0;
-int BRAKES_MAX = 1024;
+/// Brake variables
+const int BRAKES_THRESHOLD = 512;
+const int BRAKES_MILLIAMP_THRESH = 15000;
+const int BRAKES_MIN = 0;
+const int BRAKES_MAX = 1024;
 
-// Throttle
-int THROTTLE_MIN = 0;
-int THROTTLE_MAX = 1024;
-int THROTTLE_MILLIAMP_THRESH = 15000;
-int THROTTLE_P = 5;
-int THROTTLE_I = 1;
-int THROTTLE_D = 2;
-int THROTTLE_STEP = 64;
+/// Throttle
+const int THROTTLE_MIN = 0;
+const int THROTTLE_MAX = 1024;
+const int THROTTLE_MILLIAMP_THRESH = 15000;
+const int THROTTLE_P = 5;
+const int THROTTLE_I = 1;
+const int THROTTLE_D = 2;
+const int THROTTLE_STEP = 64;
 
-// RPM
-int RPM_MIN = 1550;
-int RPM_MAX = 3600;
-int RPM_STEP = 100;
+/// RPM
+const int RPM_MIN = 1550;
+const int RPM_MAX = 3600;
+const int RPM_STEP = 100;
 
-// CVT Guard
-int CVT_GUARD_THRESH = 100;
+/// CVT Guard
+const int CVT_GUARD_THRESH = 100;
+
+// Engine sensors
+const int LPH_SAMPLESIZE = 20;
+const int PSI_SAMPLESIZE = 5;
+const int TEMP_SAMPLESIZE = 3;
+const int DIGITS = 4;
+const int PRECISION = 2;
 
 /* --- GLOBAL VARIABLES --- */
-// Peripheral values
+/// Safety switches, rfid, and Joystick button variables
 int SEAT_KILL = 0;
 int HITCH_KILL = 0;
 int TRIGGER_KILL = 0;
@@ -116,38 +138,64 @@ int RPM_UP = 0;
 int RPM_DOWN = 0;
 int RPM = RPM_MIN;
 int THROTTLE = THROTTLE_MIN;
-volatile int THROTTLE_SPEED = 0;
+float LPH = 0;
+float PSI = 0;
+float TEMP = 0;
 
-// String output
+// Volatile values (Asynchronous variables)
+volatile int LPH_COUNTER = 0;
+volatile long LPH_TIME_A = millis();
+volatile long LPH_TIME_B = millis();
+
+/// String output
 char DATA_BUFFER[DATA_SIZE];
 char OUTPUT_BUFFER[OUTPUT_SIZE];
+char TEMP_BUF[DIGITS + PRECISION];
+char LPH_BUF[DIGITS + PRECISION];
+char PSI_BUF[DIGITS + PRECISION];
 
-// Throttle PID Controller
-double throttle_set, throttle_in, throttle_out;
-PID throttle_pid(&throttle_in, &throttle_out, &throttle_set, 2, 5, 1, DIRECT);
+/// Throttle PID values
+double THROTTLE_SET, THROTTLE_IN, THROTTLE_OUT;
 
-// Brake Motor Controller
+/* --- Global Objects --- */
+/// Throttle PID
+PID THROTTLE_PID(&THROTTLE_IN, &THROTTLE_OUT, &THROTTLE_SET, 2, 5, 1, DIRECT);
+
+/// Dual Motor Controller (M1 vs. M2)
 DualVNH5019MotorShield ESC;
+
+/// Temperature probe
+OneWire oneWire(TEMP_SENSOR_PIN);
+DallasTemperature TEMP_SENSOR(&oneWire);
+
+// Fuel flow and Oil pressure
+RunningMedian LPH_HIST = RunningMedian(LPH_SAMPLESIZE);
+RunningMedian PSI_HIST = RunningMedian(PSI_SAMPLESIZE);
+RunningMedian TEMP_HIST = RunningMedian(TEMP_SAMPLESIZE);
 
 /* --- SETUP --- */
 void setup() {
-
-  // Serial
-  Serial.begin(BAUD);
+  
+  // Reboot host
+  reboot();
+ 
+  // Initialize RFID authentication device
   Serial3.begin(RFID_BAUD); // Pins 14 and 15
   Serial3.write(RFID_READ);
 
-  // Failsafe Digital Input
+  // Failsafe Seat
   pinMode(SEAT_KILL_PIN, INPUT);
   digitalWrite(SEAT_KILL_PIN, HIGH);
   pinMode(SEAT_KILL_PWR, OUTPUT);
   digitalWrite(SEAT_KILL_PWR, LOW);
   
+  // Failsafe Hitch
   pinMode(HITCH_KILL_PIN, INPUT);
   digitalWrite(HITCH_KILL_PIN, HIGH);
   pinMode(HITCH_KILL_PWR, OUTPUT);
   digitalWrite(HITCH_KILL_PWR, LOW);
   
+  // Failsafe Button
   pinMode(BUTTON_KILL_PIN, INPUT);
   digitalWrite(BUTTON_KILL_PIN, HIGH);
   pinMode(BUTTON_KILL_PWR, OUTPUT);
@@ -177,7 +225,7 @@ void setup() {
   pinMode(STOP_RELAY_PIN, OUTPUT);
   pinMode(REGULATOR_RELAY_PIN, OUTPUT);
   pinMode(STARTER_RELAY_PIN, OUTPUT);
-  pinMode(ATOM_RELAY_PIN, OUTPUT);
+  pinMode(REBOOT_RELAY_PIN, OUTPUT);
 
   // Analog Input
   pinMode(RIGHT_BRAKE_PIN, INPUT);
@@ -188,7 +236,16 @@ void setup() {
   ESC.init();
 
   // PID
-  // throttle_pid.SetMode(AUTOMATIC);
+  THROTTLE_PID.SetMode(AUTOMATIC);
+  
+  // Temperature
+  TEMP_SENSOR.begin();
+  
+  // Fuel
+  attachInterrupt(LPH_SENSOR_PIN, lph_counter, RISING);
+  
+  // Begin serial communication
+  Serial.begin(BAUD);
 }
 
 /* --- LOOP --- */
@@ -214,7 +271,12 @@ void loop() {
   RFID_AUTH = check_rfid();
   LEFT_BRAKE = check_brake(LEFT_BRAKE_PIN);
   RIGHT_BRAKE = check_brake(RIGHT_BRAKE_PIN);
-
+  
+  // Engine condition
+  TEMP = get_engine_temp();
+  LPH = get_fuel_lph();
+  PSI = get_oil_psi();
+  
   // Set Brakes Always
   set_brakes(RIGHT_BRAKE, LEFT_BRAKE);
 
@@ -227,10 +289,10 @@ void loop() {
   }
   else {
     if (RPM >= RPM_MAX) {
-      RPM = 3600;
+      RPM = RPM_MAX;
     }
     else if (RPM <= RPM_MIN) {
-      RPM = 1550;
+      RPM = RPM_MIN;
     }
   }
   
@@ -250,13 +312,13 @@ void loop() {
     }
   }
 
-  // If OFF
+  // (0) If OFF
   if (RUN_MODE == 0) {
     if (RFID_AUTH) {
       standby();
     }
   }
-  // If STANDBY
+  // (1) If STANDBY
   else if (RUN_MODE == 1) {
     if (SEAT_KILL || HITCH_KILL || BUTTON_KILL) {
       kill(); // kill engine
@@ -268,7 +330,7 @@ void loop() {
       standby(); // remain in standby (RUN_MODE 1)
     }
   }
-  // If DRIVE
+  // (2) If DRIVE
   else if (RUN_MODE == 2) {
     if (SEAT_KILL || HITCH_KILL || BUTTON_KILL || TRIGGER_KILL) {
       kill(); // kill engine
@@ -289,6 +351,9 @@ void loop() {
   }
 
   // USB
+  dtostrf(LPH, DIGITS, PRECISION, LPH_BUF);
+  dtostrf(TEMP, DIGITS, PRECISION, TEMP_BUF);
+  dtostrf(PSI, DIGITS, PRECISION, PSI_BUF);
   sprintf(DATA_BUFFER, "{'run_mode':%d,'display_mode':%d,'right_brake':%d,'left_brake':%d,'cvt_guard':%d,'seat':%d,'hitch':%d,'ignition':%d,'rfid':'%d','cart_mode':%d,'cart_fwd':%d,'cart_bwd':%d','rpm'%d,'throttle':%d}", RUN_MODE, DISPLAY_MODE, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, SEAT_KILL, HITCH_KILL, IGNITION, RFID_AUTH, CART_MODE, CART_FORWARD, CART_BACKWARD, RPM, THROTTLE);
   sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
@@ -296,19 +361,18 @@ void loop() {
 }
 
 /* --- SYNCHRONOUS TASKS --- */
-
-// Set Throttle
+/// Set Throttle
 int set_throttle(int val) {
-  throttle_set = val;
-  throttle_in = analogRead(THROTTLE_POS_PIN); // get the position feedback from the linear actuator
-  throttle_pid.Compute(); // this ghost-overwrites the 'throttle_out' variable
+  THROTTLE_SET = val;
+  THROTTLE_IN = analogRead(THROTTLE_POS_PIN); // get the position feedback from the linear actuator
+  THROTTLE_PID.Compute(); // this ghost-overwrites the 'THROTTLE_OUT' variable
   
   // Engage throttle actuator
   if (ESC.getM1CurrentMilliamps() >  THROTTLE_MILLIAMP_THRESH) {
     ESC.setM1Speed(0); // disable if over-amp
   }
   else {
-    int output = map(throttle_out, 0, 255, -400, 400);
+    int output = map(THROTTLE_OUT, 0, 255, -400, 400);
     ESC.setM1Speed(output);
   }
 }
@@ -324,7 +388,7 @@ int check_brake(int pin) {
   }
 }
 
-// Set brakes
+/// Set brakes
 // Returns true if the brake interlock is engaged
 int set_brakes(int left_brake, int right_brake) {
   
@@ -348,7 +412,7 @@ int set_brakes(int left_brake, int right_brake) {
   }
 }
 
-// Check Display Mode
+/// Check Display Mode
 int check_switch(int pin_num) {
   if  (digitalRead(pin_num)) {
     if (digitalRead(pin_num)) {
@@ -363,7 +427,7 @@ int check_switch(int pin_num) {
   }
 }
 
-// Check RFID
+/// Check RFID
 int check_rfid(void) {
   Serial3.write(RFID_READ);
   delay(2);
@@ -372,14 +436,14 @@ int check_rfid(void) {
   int c = Serial3.read();
   int d = Serial3.read();
   if ((a > 0) && (b > 0) && (c > 0) && (d > 0)) {
-    return a + b + c + d;
+    return a + b + c + d; // the user's key number
   }
   else {
     return 0;
   }
 }
 
-// Checksum
+/// Checksum
 int checksum() {
   int sum = 0;
   for (int i = 0; i < DATA_SIZE; i++) {
@@ -389,7 +453,7 @@ int checksum() {
   return val;
 }
 
-// Check Guard --> Returns true if guard open
+/// Check Guard --> Returns true if guard open
 int check_guard(void) {
   if (analogRead(CVT_GUARD_PIN) >= CVT_GUARD_THRESH) {
     if (analogRead(CVT_GUARD_PIN) >= CVT_GUARD_THRESH) {
@@ -404,9 +468,15 @@ int check_guard(void) {
   }
 }
 
-// Kill
+/// Reboot
+void reboot(void) {
+  digitalWrite(REBOOT_RELAY_PIN, LOW);
+  delay(REBOOT_WAIT);
+  digitalWrite(REBOOT_RELAY_PIN, HIGH);
+}
+
+/// Kill
 void kill(void) {
-  Serial.println("kill");
   digitalWrite(STOP_RELAY_PIN, HIGH);
   digitalWrite(STARTER_RELAY_PIN, HIGH);
   digitalWrite(REGULATOR_RELAY_PIN, HIGH);
@@ -414,9 +484,8 @@ void kill(void) {
   RUN_MODE = 0;
 }
 
-// Standby
+/// Standby
 void standby(void) {
-  Serial.println("standby");
   digitalWrite(STOP_RELAY_PIN, LOW);
   digitalWrite(REGULATOR_RELAY_PIN, LOW);
   digitalWrite(STARTER_RELAY_PIN, HIGH);
@@ -424,9 +493,8 @@ void standby(void) {
   RUN_MODE = 1;
 }
 
-// Ignition
+/// Ignition
 void ignition(void) {
-  Serial.println("ignition");
   ESC.setM1Speed(0);
   ESC.setM2Speed(0);
   while (check_switch(IGNITION_PIN)) {
@@ -442,5 +510,38 @@ void ignition(void) {
   RUN_MODE = 2;
 }
 
-/* --- ASYNCHRONOUS TASKS --- */
+// Get Fuel Rate
+float get_fuel_lph(void) {
+  LPH_TIME_A = millis();
+  float lph = (float(LPH_COUNTER) * 0.00038 * 3600.0) / (float(LPH_TIME_B - LPH_TIME_A) / 1000.0);
+  LPH_HIST.add(lph);
+  LPH_COUNTER = 0;
+  LPH_TIME_B = millis();
+  return LPH_HIST.getAverage();
+}
 
+/// Get Engine Temperature
+float get_engine_temp(void) {
+  float tmp = TEMP_SENSOR.getTempCByIndex(0);
+  TEMP_SENSOR.requestTemperatures();
+  if (isnan(tmp)) {
+    return TEMP_HIST.getAverage();
+  }
+  else {
+    TEMP_HIST.add(tmp);
+  }
+  return TEMP_HIST.getAverage();
+}
+
+/// Get the Engine Oil Pressure
+float get_oil_psi(void) {
+  int ohms = analogRead(PSI_SENSOR_PIN);
+  float psi = 0.0226 * ohms * ohms - 4.3316 * ohms + 240;
+  PSI_HIST.add(psi);
+  return PSI_HIST.getAverage();
+}
+
+/* --- ASYNCHRONOUS TASKS --- */
+void lph_counter(void) {
+  LPH_COUNTER++;
+}
