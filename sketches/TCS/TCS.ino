@@ -18,16 +18,14 @@ const int DATA_SIZE = 128;
 const int OUTPUT_SIZE = 256;
 const int INTERVAL = 200; // millisecond wait
 
-// Interrupts
+// Digital Inputs (some are Interrupts)
 const int DRIVESHAFT_INT = 22;
 const int WHEEL_INT = 24;
 const int SPARKPLUG_INT = 26;
-const int ENCODER_INT = 3;
-const int ENCODER_A_PIN = 10;
-const int ENCODER_B_PIN = 11;
-
-// Digital Inputs
-const int CVT_MODE_PIN = 12;
+const int ENCODER_INT = 28;
+const int ENCODER_A_PIN = 28;
+const int ENCODER_B_PIN = 30;
+const int CVT_MODE_PIN = 32; // the optional mode for pull vs. manual
 
 // Analog Input
 const int CVT_POSITION_PIN = A0;
