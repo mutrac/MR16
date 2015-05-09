@@ -96,7 +96,7 @@ char DATA_BUFFER[DATA_SIZE];
 long TIME = millis();
 
 // Sample sets
-RunningMedian SPARKPLUG_HIST = RunningMedian(SPARKPLUG_SAMPLESIZE);
+RunningMedian ENGINE_HIST = RunningMedian(SPARKPLUG_SAMPLESIZE);
 RunningMedian DRIVESHAFT_HIST = RunningMedian(DRIVESHAFT_SAMPLESIZE);
 RunningMedian WHEEL_HIST = RunningMedian(WHEEL_SAMPLESIZE);
 
@@ -139,9 +139,12 @@ void loop() {
   // Wait and get volatile values
   TIME = millis();
   delay(INTERVAL);
-  DRIVESHAFT_RPM = DRIVESHAFT_PULSES / float(millis() - TIME);
-  ENGINE_RPM =  2 * SPARKPLUG_PULSES / float(millis() - TIME);
-  WHEEL_RPM =  WHEEL_PULSES / float(millis() - TIME);
+  DRIVESHAFT_HIST.add(DRIVESHAFT_PULSES / float(millis() - TIME));
+  ENGINE_HIST.add(2 * SPARKPLUG_PULSES / float(millis() - TIME));
+  WHEEL_HIST.add(WHEEL_PULSES / float(millis() - TIME));
+  DRIVESHAFT_RPM = DRIVESHAFT_HIST.getAverage();
+  ENGINE_RPM = ENGINE_HIST.getAverage();
+  WHEEL_RPM = WHEEL_HIST.getAverage();
   CVT_RATIO = ENGINE_RPM / DRIVESHAFT_RPM;
   DIFF_RATIO = DRIVESHAFT_RPM / WHEEL_RPM;
   
