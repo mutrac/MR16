@@ -9,7 +9,7 @@
   
   However, information for DBS control is best handled via the CMQ (see CMQ Commands).
     
-  Requires: Arduino UNO with Pololu DualVNH5019 Motor Shield
+  Requires: Arduino Mega with Pololu DualVNH5019 Motor Shield
 */
 
 /* --- LIBRARIES --- */
@@ -31,11 +31,15 @@ const int DATA_SIZE = 128;
 const int OUTPUT_SIZE = 256;
 
 // Analog Inputs
-const int STEERING_POSITION_PIN = A0;
-const int ACTUATOR_POSITION_PIN = A1;
-const int SUSPENSION_POSITION_PIN = A2;
+const int STEERING_POSITION_PIN = A2;
+const int ACTUATOR_POSITION_PIN = A3;
+const int SUSPENSION_POSITION_PIN = A5;
 
 // Digital Inputs
+
+// Safety Limits
+const int STEERING_MILLIAMP_LIMIT = 15000;
+const int BALLAST_MILLIAMP_LIMIT = 15000;
 
 /* --- GLOBAL VARIABLES --- */
 // Create sensor values
@@ -53,7 +57,7 @@ char DATA_BUFFER[DATA_SIZE];
 // Create PID controller objects
 double STEERING_SET, STEERING_IN, STEERING_OUT;
 double BALLAST_SET, BALLAST_IN, BALLAST_OUT;
-PID STEERING_PID(&STEERING_IN, &STEERING_OUT, &STEERING_SET, 2, 5, 1, DIRECT);
+PID STEERING_PID(&STEERING_IN, &STEERING_OUT, &STEERING_SET, 5, 0.5, 0, DIRECT);
 PID BALLAST_PID(&BALLAST_IN, &BALLAST_OUT, &BALLAST_SET, 2, 5, 1, DIRECT);
 
 DualVNH5019MotorShield VDC; // M1 is Steering, M2 is Ballast
@@ -85,9 +89,10 @@ void loop() {
   STEERING_SET = double(STR_POS);
   STEERING_PID.Compute();
   
-  // Set steering actuator power output
-  if (VDC.getM1CurrentMilliamps()) {
-    VDC.setM1Speed(int(STEERING_OUT));
+  // M1 - Set steering actuator power output
+  if (VDC.getM1CurrentMilliamps() < STEERING_MILLIAMP_LIMIT) {
+    int val = map(int(STEERING_OUT), 0, 255, 400, -400);
+    VDC.setM1Speed(val);
   }
   else {
     VDC.setM1Speed(0);
@@ -123,17 +128,17 @@ void loop() {
     }
   }
   
-  // Set ballast motor power
+  // M2 - Set ballast motor power
   if (CART_MODE) {
     int val = int(BALLAST_OUT);
     VDC.setM2Speed(val);
   }
   else {
     if (CART_FORWARD && !CART_BACKWARD) {
-      VDC.setM1Speed(400);
+      VDC.setM2Speed(400);
     }
     else if (CART_BACKWARD && !CART_FORWARD) {
-      VDC.setM1Speed(-400);
+      VDC.setM2Speed(-400);
     }
     else {
       VDC.setM2Speed(0);
