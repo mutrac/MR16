@@ -18,9 +18,9 @@ const int OUTPUT_SIZE = 256;
 const int INTERVAL = 200; // millisecond wait
 
 // Interrupts
-const int SPARKPLUG_INT = 0;
-const int DRIVESHAFT_INT = 1;
-const int WHEEL_INT = 2;
+const int DRIVESHAFT_INT = 22;
+const int WHEEL_INT = 24;
+const int SPARKPLUG_INT = 26;
 const int ENCODER_INT = 3;
 const int ENCODER_A_PIN = 10;
 const int ENCODER_B_PIN = 11;
