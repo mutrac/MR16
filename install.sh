@@ -20,7 +20,7 @@ sudo apt-get install python-tk -y -qq
 
 # Install AV Codecs from APT
 echo "Installing AV Codecs"
-sudo apt-get install yasm
+sudo apt-get install yasm -y -qq
 sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libdc1394-22-dev libxine-dev libgstreamer0.10-dev libgstreamer-plugins-base0.10-dev libv4l-dev -y -qq
 sudo apt-get install libmp3lame-dev libopencore-amrnb-dev libopencore-amrwb-dev libtheora-dev libvorbis-dev libx264-dev libxvidcore-dev  -y -qq
 sudo apt-get install libtiff4-dev libjpeg-dev libjasper-dev -y -qq
@@ -41,7 +41,7 @@ sudo ln -s ../libavformat/avformat.h avformat.h
 
 # Install OpenCV from source
 echo "Installing OpenCV 2.4.9"
-sudo apt-get install cmake libgtk2.0-dev pkg-config
+sudo apt-get install cmake libgtk2.0-dev pkg-config -y -qq
 unzip opencv-2.4.9.zip
 cd opencv-2.4.9
 mkdir release
