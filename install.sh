@@ -3,24 +3,20 @@
 sudo apt-get update
 sudo apt-get upgrade
 
-# Python Base
+# Basics
 sudo apt-get install python-dev build-essential python-pip
 
-# Arduino
+## CMQ
 sudo apt-get install arduino arduino-mk -y -qq
+sudo apt-get install zmq python-serial python-zmq -y -qq
 
-# MongoDB
+## OBD
+sudo apt-get install python-cherrypy3 -y -qq
 sudo apt-get install mongodb -y -qq
 sudo pip install pymongo
 
-# CMQ
-sudo apt-get install zmq python-serial python-zmq -y -qq
-
-# OBD
-sudo apt-get install python-cherrypy3 -y -qq
-
-# HUD
-sudo apt-get install python-tkinter -y -qq
+## HUD
+sudo apt-get install python-tk -y -qq
 
 # Install AV Codecs from APT
 echo "Installing AV Codecs"
@@ -54,8 +50,32 @@ cmake -D CV_BUILD_TYPE=RELEASE ..
 make -j4
 sudo make install
 
-echo "Removing LightDM"
-update-rc.d lightdm remove
+# Configure Boot
+read -p "Are you sure you want to start automatically on boot [y/n]?" ans
+if [ $ans = y -o $ans = Y -o $ans = yes -o $ans = Yes -o $ans = YES ]
+    then
+        echo "Removing LightDM ..."
+        update-rc.d -f lightdm remove
+        
+        echo "Disabling Mouse (Unclutter) ..."
+        apt-get install unclutter
+        cp configs/unclutter /etc/default/
+        
+        echo "Installing to Boot Path ..."
+        cp configs/rc.local /etc/
+        chmod +x /etc/rc.local
+        
+        echo "Updating Custom Grub ..."
+        cp configs/grub /etc/default
+        update-grub
+        
+        echo "Reconfiguring Network Interfaces ..."
+        cp configs/interfaces /etc/network
+fi
+if [ $ans = n -o $ans = N -o $ans = no -o $ans = No -o $ans = NO ]
+    then
+        echo "Aborting..."
+fi
 
 echo "Cleaning up files"
 cd ../..
