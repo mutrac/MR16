@@ -76,7 +76,8 @@ double PULL_OUT;
 PID PULL_PID(&PULL_IN, &PULL_OUT, &PULL_SET, PULL_P, PULL_I, PULL_D, DIRECT);
 
 // Initialize stepper motor
-AF_Stepper STEPPER(STEPPER_RESOLUTION, STEPPER_TYPE); // TODO: find stepper resolution
+Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
+Adafruit_StepperMotor *STEPPER = AFMS.getStepper(STEPPER_RESOLUTION, STEPPER_TYPE);
 
 // Counters
 volatile int SPARKPLUG_PULSES = 0;
@@ -125,7 +126,8 @@ void setup() {
   attachInterrupt(ENCODER_INT, encoder_counter, RISING);
   
   // Initialize Stepper
-  STEPPER.setSpeed(STEPPER_SPEED); // the stepper speed in rpm
+  AFMS.begin();  // create with the default frequency 1.6KHz
+  STEPPER->setSpeed(STEPPER_SPEED); // the stepper speed in rpm
 }
 
 /* --- Loop --- */
@@ -176,18 +178,18 @@ void loop() {
   // Engage Stepper motor for either Manual or Pull Mode
   if (PULL_MODE) {
     if (PULL_OUT > 0) {
-      STEPPER.step(PULL_OUT, FORWARD, SINGLE); 
+      STEPPER->step(PULL_OUT, FORWARD, SINGLE); 
     }
     else if (PULL_OUT < 0) {
-      STEPPER.step(PULL_OUT, BACKWARD, SINGLE); 
+      STEPPER->step(PULL_OUT, BACKWARD, SINGLE); 
     }
   }
   else {
     if (MANUAL_OUT > 0) {
-      STEPPER.step(MANUAL_OUT, FORWARD, SINGLE); 
+      STEPPER->step(MANUAL_OUT, FORWARD, SINGLE); 
     }
     else if (MANUAL_OUT < 0) {
-      STEPPER.step(MANUAL_OUT, BACKWARD, SINGLE); 
+      STEPPER->step(MANUAL_OUT, BACKWARD, SINGLE); 
     }
   }
   
