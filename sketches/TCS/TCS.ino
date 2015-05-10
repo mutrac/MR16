@@ -1,6 +1,8 @@
 /*
   Traction Control Subsystem (TCS)
   McGill ASABE Tractor Team
+  
+  Board: Arduino DUE ATmega368
 */
 
 /* --- Libraries --- */
