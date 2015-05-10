@@ -1,0 +1,13 @@
+#!/bin/sh -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+gpsd /dev/ttyS0
+#rmmod uvcvideo
+#modprobe uvcvideo nodrop=1 timeout=10 quirks=0x80
+startx
+exit 0
