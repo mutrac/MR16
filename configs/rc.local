@@ -3,12 +3,12 @@
 # Make sure that the script will "exit 0" on success or any other
 # value on error.
 
-gpsd /dev/ttyS0
+#gpsd /dev/ttyS0
 #rmmod uvcvideo
 #modprobe uvcvideo nodrop=1 timeout=10 quirks=0x80
-cd /root/MR16
-git fetch --all
-git reset --hard HEAD
-git pull
-startx
+#cd /root/MR16
+#git fetch --all
+#git reset --hard HEAD
+#git pull
+startxfce4
 exit 0
