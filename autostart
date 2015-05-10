@@ -1,0 +1,11 @@
+#!/bin/sh
+#!/bin/sh
+# BASH boot script for the MR16
+# This script is responsible for starting all of the necessary subsystems
+# As such, it's SUPER IMPORTANT
+
+cd ~/MR16/base/
+python OBD.py &
+python CMQ.py &
+python HUD.py &
+python V6.py &

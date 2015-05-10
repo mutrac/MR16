@@ -42,8 +42,8 @@ const float CVT_RATIO_MAX = 4.13;
 const float CVT_RATIO_MIN = 0.77;
 
 // Differential Settings
-const float DIFF_RATIO_MAX = 3;
-const float DIFF_RATIO_MIN = 1;
+const float DIFF_RATIO_MAX = 3.0;
+const float DIFF_RATIO_MIN = 1.0;
 
 // Sample sets
 const int SPARKPLUG_SAMPLESIZE = 10;
