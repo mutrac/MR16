@@ -5,7 +5,7 @@
 
 /* --- Libraries --- */
 #include "PID_v1.h"
-#include "AFMotor.h"
+#include "Adafruit_MotorShield.h"
 #include <RunningMedian.h>
 
 /* --- Global Constants --- */
