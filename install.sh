@@ -54,6 +54,9 @@ cmake -D CV_BUILD_TYPE=RELEASE ..
 make -j4
 sudo make install
 
+echo "Removing LightDM"
+update-rc.d lightdm remove
+
 echo "Cleaning up files"
 cd ../..
 rm -rf ffmpeg-0.11.1
