@@ -8,7 +8,7 @@ sudo apt-get install python-dev build-essential python-pip unzip -y -qq
 
 ## CMQ
 sudo apt-get install arduino arduino-mk -y -qq
-sudo apt-get install zmq python-serial python-zmq -y -qq
+sudo apt-get install python-serial python-zmq -y -qq
 
 ## OBD
 sudo apt-get install python-cherrypy3 -y -qq
@@ -80,6 +80,6 @@ if [ $ans = n -o $ans = N -o $ans = no -o $ans = No -o $ans = NO ]
 fi
 
 echo "Cleaning up files/folders"
-cd ../..
+cd /root/MR16/src
 rm -rf ffmpeg-0.11.1
 rm -rf opencv-2.4.9
