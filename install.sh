@@ -79,6 +79,12 @@ if [ $ans = n -o $ans = N -o $ans = no -o $ans = No -o $ans = NO ]
         echo "Aborting..."
 fi
 
+# Copy Arduino Libraries
+echo "Copying libraries for arduino"
+cd /root/MR16
+cp -R lib/* /usr/share/arduino/libraries
+
+# Clean up
 echo "Cleaning up files/folders"
 cd /root/MR16/src
 rm -rf ffmpeg-0.11.1
