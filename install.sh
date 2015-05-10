@@ -4,7 +4,7 @@ sudo apt-get update
 sudo apt-get upgrade
 
 # Basics
-sudo apt-get install python-dev build-essential python-pip
+sudo apt-get install python-dev build-essential python-pip unzip -y -qq
 
 ## CMQ
 sudo apt-get install arduino arduino-mk -y -qq
@@ -27,6 +27,7 @@ sudo apt-get install libtiff4-dev libjpeg-dev libjasper-dev -y -qq
 
 # Install FFMPEG from source
 echo "Installing ffmpeg"
+cd /root/MR16/src
 tar -xvf ffmpeg-0.11.1.tar.bz2
 cd ffmpeg-0.11.1/
 ./configure --enable-gpl --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libtheora --enable-libvorbis --enable-libx264 --enable-libxvid --enable-nonfree --enable-postproc --enable-version3 --enable-x11grab
@@ -41,6 +42,7 @@ sudo ln -s ../libavformat/avformat.h avformat.h
 
 # Install OpenCV from source
 echo "Installing OpenCV 2.4.9"
+cd /root/MR16/src
 sudo apt-get install cmake libgtk2.0-dev pkg-config -y -qq
 unzip opencv-2.4.9.zip
 cd opencv-2.4.9
@@ -77,9 +79,7 @@ if [ $ans = n -o $ans = N -o $ans = no -o $ans = No -o $ans = NO ]
         echo "Aborting..."
 fi
 
-echo "Cleaning up files"
+echo "Cleaning up files/folders"
 cd ../..
 rm -rf ffmpeg-0.11.1
-rm ffmpeg-0.11.1.tar.bz2
-rm opencv-2.4.9.zip
 rm -rf opencv-2.4.9
