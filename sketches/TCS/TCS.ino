@@ -7,8 +7,11 @@
 
 /* --- Libraries --- */
 #include "PID_v1.h"
+#include <Wire.h>
 #include "Adafruit_MotorShield.h"
+#include "utility/Adafruit_PWMServoDriver.h"
 #include <RunningMedian.h>
+#include "stdio.h"
 
 /* --- Global Constants --- */
 // CAN
@@ -18,13 +21,13 @@ const char PUSH[] = "push";
 const int BAUD = 9600;
 const int DATA_SIZE = 128;
 const int OUTPUT_SIZE = 256;
-const int INTERVAL = 200; // millisecond wait
+const int INTERVAL = 500; // millisecond wait
 
 // Digital Inputs (some are Interrupts)
-const int DRIVESHAFT_INT = 22;
-const int WHEEL_INT = 24;
-const int SPARKPLUG_INT = 26;
-const int ENCODER_INT = 28;
+const int DRIVESHAFT_PIN = 14;
+const int WHEEL_PIN = 24;
+const int SPARKPLUG_PIN = 26;
+const int ENCODER_PIN = 28;
 const int ENCODER_A_PIN = 28;
 const int ENCODER_B_PIN = 30;
 const int CVT_MODE_PIN = 32; // the optional mode for pull vs. manual
@@ -33,11 +36,16 @@ const int CVT_MODE_PIN = 32; // the optional mode for pull vs. manual
 const int CVT_POSITION_PIN = A0;
 
 // Stepper Motor Settings
-const int STEPPER_SPEED = 100;
+const int STEPPER_SPEED = 600;
 const int STEPPER_RESOLUTION = 48;
 const int STEPPER_TYPE = 2; // biploar
 const int STEPPER_DISENGAGE = 0; // the encoder reading when the stepper motor engages/disenchages the CVT
 const int STEPPER_MAX = 1024; // the encoder reading when the stepper is fully extended
+
+// Interrupt pulses/rev
+const int DRIVESHAFT_PULSES_PER_REV = 12;
+const int WHEEL_PULSES_PER_REV = 10;
+const int ENGINE_PULSES_PER_REV = 2;
 
 // CVT Settings
 const float CVT_RATIO_MAX = 4.13;
@@ -48,11 +56,21 @@ const float DIFF_RATIO_MAX = 3.0;
 const float DIFF_RATIO_MIN = 1.0;
 
 // Sample sets
-const int SPARKPLUG_SAMPLESIZE = 10;
-const int DRIVESHAFT_SAMPLESIZE = 10;
-const int WHEEL_SAMPLESIZE = 10;
+const int SPARKPLUG_SAMPLESIZE = 5;
+const int DRIVESHAFT_SAMPLESIZE = 5;
+const int WHEEL_SAMPLESIZE = 5;
+
+// Float to char
+const int PRECISION = 2; // number of floating point decimal places
+const int DIGITS = 6; // number of floating point digits 
+const int CHARS = 8;
 
 /* --- Global Variables --- */
+
+// Float strings
+char CVT_RATIO_S[CHARS];
+char DIFF_RATIO_S[CHARS];
+
 // Mode variables
 boolean PULL_MODE = 0;
 int CVT_POSITION = 0;
@@ -80,6 +98,7 @@ PID PULL_PID(&PULL_IN, &PULL_OUT, &PULL_SET, PULL_P, PULL_I, PULL_D, DIRECT);
 // Initialize stepper motor
 Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
 Adafruit_StepperMotor *STEPPER = AFMS.getStepper(STEPPER_RESOLUTION, STEPPER_TYPE);
+//Stepper STEPPER(2);
 
 // Counters
 volatile int SPARKPLUG_PULSES = 0;
@@ -112,7 +131,8 @@ void setup() {
   // Analog Inputs
   pinMode(CVT_POSITION_PIN, INPUT);
   pinMode(CVT_MODE_PIN, INPUT);
-
+  pinMode(DRIVESHAFT_PIN, INPUT);
+  
   // Initialize Manual PID
   MANUAL_PID.SetMode(AUTOMATIC);
   MANUAL_PID.SetTunings(MANUAL_P, MANUAL_I, MANUAL_D);
@@ -122,10 +142,10 @@ void setup() {
   PULL_PID.SetTunings(PULL_P, PULL_I, PULL_D);
   
   // Initilize asynch interrupts
-  attachInterrupt(SPARKPLUG_INT, sparkplug_counter, RISING);
-  attachInterrupt(DRIVESHAFT_INT, driveshaft_counter, RISING);
-  attachInterrupt(WHEEL_INT, wheel_counter, RISING);
-  attachInterrupt(ENCODER_INT, encoder_counter, RISING);
+  attachInterrupt(SPARKPLUG_PIN, sparkplug_counter, RISING);
+  attachInterrupt(DRIVESHAFT_PIN, driveshaft_counter, CHANGE);
+  attachInterrupt(WHEEL_PIN, wheel_counter, CHANGE);
+  attachInterrupt(ENCODER_PIN, encoder_counter, CHANGE);
   
   // Initialize Stepper
   AFMS.begin();  // create with the default frequency 1.6KHz
@@ -139,19 +159,21 @@ void loop() {
   SPARKPLUG_PULSES = 0;
   DRIVESHAFT_PULSES = 0;
   WHEEL_PULSES = 0;
-  
+
   // Wait and get volatile values
   TIME = millis();
   delay(INTERVAL);
   DRIVESHAFT_HIST.add(DRIVESHAFT_PULSES / float(millis() - TIME));
-  ENGINE_HIST.add(2 * SPARKPLUG_PULSES / float(millis() - TIME));
+  ENGINE_HIST.add(SPARKPLUG_PULSES / float(millis() - TIME));
   WHEEL_HIST.add(WHEEL_PULSES / float(millis() - TIME));
-  DRIVESHAFT_RPM = DRIVESHAFT_HIST.getAverage();
-  ENGINE_RPM = ENGINE_HIST.getAverage();
-  WHEEL_RPM = WHEEL_HIST.getAverage();
+  DRIVESHAFT_RPM = 60 * DRIVESHAFT_HIST.getAverage() / DRIVESHAFT_PULSES_PER_REV;
+  ENGINE_RPM = 60 * ENGINE_HIST.getAverage() / WHEEL_PULSES_PER_REV;
+  WHEEL_RPM = 60 * WHEEL_HIST.getAverage() / WHEEL_PULSES_PER_REV;
   CVT_RATIO = ENGINE_RPM / DRIVESHAFT_RPM;
   DIFF_RATIO = DRIVESHAFT_RPM / WHEEL_RPM;
-  
+  //dtostrf(CVT_RATIO_S, DIGITS, PRECISION, CVT_RATIO);
+  //dtostrf(DIFF_RATIO_S, DIGITS, PRECISION, DIFF_RATIO);
+    
   // Read the position of the joystick
   CVT_POSITION = analogRead(CVT_POSITION_PIN);
   
@@ -177,26 +199,36 @@ void loop() {
     }
   }
 
+  // Test Stepper
+  //STEPPER->step(1000, FORWARD, DOUBLE); 
+  //delay(1000);
+  //STEPPER->step(1000, BACKWARD, DOUBLE); 
+  //delay(1000);
+  
   // Engage Stepper motor for either Manual or Pull Mode
   if (PULL_MODE) {
     if (PULL_OUT > 0) {
-      STEPPER->step(PULL_OUT, FORWARD, SINGLE); 
+      // STEPPER->step(100, FORWARD, DOUBLE); 
+      // Serial.println("Auto forward");
     }
     else if (PULL_OUT < 0) {
-      STEPPER->step(PULL_OUT, BACKWARD, SINGLE); 
+      // STEPPER->step(100, BACKWARD, DOUBLE);
+      // Serial.println("Auto backward");
     }
   }
   else {
     if (MANUAL_OUT > 0) {
-      STEPPER->step(MANUAL_OUT, FORWARD, SINGLE); 
+      // STEPPER->step(100, FORWARD, DOUBLE); 
+      // Serial.println("Manual forward");
     }
     else if (MANUAL_OUT < 0) {
-      STEPPER->step(MANUAL_OUT, BACKWARD, SINGLE); 
+      // STEPPER->step(100, BACKWARD, DOUBLE);
+      // Serial.println("Manual backward");
     }
   }
   
   // Output string buffer
-  sprintf(DATA_BUFFER, "{'driveshaft_rpm':%d,'wheel_rpm':%d,'engine_rpm':%d,'cvt_ratio':%d,'pull_mode':%d}", DRIVESHAFT_RPM, WHEEL_RPM,  ENGINE_RPM, CVT_RATIO, PULL_MODE);
+  sprintf(DATA_BUFFER, "{'driveshaft_rpm':%d,'wheel_rpm':%d,'engine_rpm':%d,'cvt_ratio':%s,'diff_ratio:%s,'pull_mode':%d}", DRIVESHAFT_RPM, WHEEL_RPM,  ENGINE_RPM, CVT_RATIO_S, DIFF_RATIO_S, PULL_MODE);
   sprintf(OUTPUT_BUFFER, "{'uid':'%s',data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
 }
