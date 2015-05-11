@@ -24,7 +24,7 @@ const int OUTPUT_SIZE = 256;
 const int INTERVAL = 500; // millisecond wait
 
 // Digital Inputs (some are Interrupts)
-const int DRIVESHAFT_PIN = 14;
+const int DRIVESHAFT_PIN = 22;
 const int WHEEL_PIN = 24;
 const int SPARKPLUG_PIN = 26;
 const int ENCODER_PIN = 28;
@@ -98,7 +98,6 @@ PID PULL_PID(&PULL_IN, &PULL_OUT, &PULL_SET, PULL_P, PULL_I, PULL_D, DIRECT);
 // Initialize stepper motor
 Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
 Adafruit_StepperMotor *STEPPER = AFMS.getStepper(STEPPER_RESOLUTION, STEPPER_TYPE);
-//Stepper STEPPER(2);
 
 // Counters
 volatile int SPARKPLUG_PULSES = 0;
