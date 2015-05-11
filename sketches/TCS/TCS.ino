@@ -1,6 +1,6 @@
 /*
   Traction Control Subsystem (TCS)
-  McGill ASABE Tractor Team
+  McGill ASABE Engineering Team
   
   Board: Arduino DUE ATmega368
 */
@@ -14,10 +14,12 @@
 #include "stdio.h"
 
 /* --- Global Constants --- */
-// CAN
+// CMQ
 const char UID[] = "TCS";
 const char PULL[] = "pull";
 const char PUSH[] = "push";
+const char PULL_CMD = 'A';
+const char MANUAL_CMD = 'M';
 const int BAUD = 9600;
 const int DATA_SIZE = 128;
 const int OUTPUT_SIZE = 256;
@@ -27,10 +29,8 @@ const int INTERVAL = 500; // millisecond wait
 const int DRIVESHAFT_PIN = 22;
 const int WHEEL_PIN = 24;
 const int SPARKPLUG_PIN = 26;
-const int ENCODER_PIN = 28;
 const int ENCODER_A_PIN = 28;
 const int ENCODER_B_PIN = 30;
-const int CVT_MODE_PIN = 32; // the optional mode for pull vs. manual
 
 // Analog Input
 const int CVT_POSITION_PIN = A0;
@@ -66,13 +66,12 @@ const int DIGITS = 6; // number of floating point digits
 const int CHARS = 8;
 
 /* --- Global Variables --- */
-
 // Float strings
 char CVT_RATIO_S[CHARS];
 char DIFF_RATIO_S[CHARS];
 
 // Mode variables
-boolean PULL_MODE = 0;
+boolean CVT_MODE = 0;
 int CVT_POSITION = 0;
 float CVT_RATIO = CVT_RATIO_MIN;
 float DIFF_RATIO = DIFF_RATIO_MIN;
@@ -129,8 +128,6 @@ void setup() {
   
   // Analog Inputs
   pinMode(CVT_POSITION_PIN, INPUT);
-  pinMode(CVT_MODE_PIN, INPUT);
-  pinMode(DRIVESHAFT_PIN, INPUT);
   
   // Initialize Manual PID
   MANUAL_PID.SetMode(AUTOMATIC);
@@ -142,9 +139,9 @@ void setup() {
   
   // Initilize asynch interrupts
   attachInterrupt(SPARKPLUG_PIN, sparkplug_counter, RISING);
-  attachInterrupt(DRIVESHAFT_PIN, driveshaft_counter, CHANGE);
-  attachInterrupt(WHEEL_PIN, wheel_counter, CHANGE);
-  attachInterrupt(ENCODER_PIN, encoder_counter, CHANGE);
+  attachInterrupt(DRIVESHAFT_PIN, driveshaft_counter, LOW);
+  attachInterrupt(WHEEL_PIN, wheel_counter, LOW);
+  attachInterrupt(ENCODER_A_PIN, encoder_counter, CHANGE);
   
   // Initialize Stepper
   AFMS.begin();  // create with the default frequency 1.6KHz
@@ -166,12 +163,12 @@ void loop() {
   ENGINE_HIST.add(SPARKPLUG_PULSES / float(millis() - TIME));
   WHEEL_HIST.add(WHEEL_PULSES / float(millis() - TIME));
   DRIVESHAFT_RPM = 60 * DRIVESHAFT_HIST.getAverage() / DRIVESHAFT_PULSES_PER_REV;
-  ENGINE_RPM = 60 * ENGINE_HIST.getAverage() / WHEEL_PULSES_PER_REV;
+  ENGINE_RPM = 60 * ENGINE_HIST.getAverage() / ENGINE_PULSES_PER_REV;
   WHEEL_RPM = 60 * WHEEL_HIST.getAverage() / WHEEL_PULSES_PER_REV;
   CVT_RATIO = ENGINE_RPM / DRIVESHAFT_RPM;
   DIFF_RATIO = DRIVESHAFT_RPM / WHEEL_RPM;
-  //dtostrf(CVT_RATIO_S, DIGITS, PRECISION, CVT_RATIO);
-  //dtostrf(DIFF_RATIO_S, DIGITS, PRECISION, DIFF_RATIO);
+  dtostrf(CVT_RATIO, DIGITS, PRECISION, CVT_RATIO_S);
+  dtostrf(DIFF_RATIO, DIGITS, PRECISION, DIFF_RATIO_S);
     
   // Read the position of the joystick
   CVT_POSITION = analogRead(CVT_POSITION_PIN);
@@ -182,52 +179,45 @@ void loop() {
   MANUAL_SET = double(CVT_POSITION);
   MANUAL_PID.Compute();
   
-  // Calculate AUTOMATIC controller output
+  // Calculate PULL (CVT Ratio Tracking) controller output
   // In this mode, the engine RPM is maximized by reducing the cvt_ratio until the disengagement threshold is reached
   PULL_IN = double(CVT_RATIO);
   PULL_SET = double(CVT_POSITION);
-  PULL_PID.Compute();
+  PULL_PID.Compute(); // ghost-writes to PULL_PID
    
   // Set CVT Mode
-  if (digitalRead(CVT_MODE_PIN)) {
-    if (PULL_MODE) {
-      PULL_MODE = 0;
-    }
-    else {
-      PULL_MODE = 1;
+  if (Serial.available()) {
+    char c = Serial.read();
+    switch (c) {
+      case PULL_CMD:
+        CVT_MODE = 1;
+        break;
+      case MANUAL_CMD:
+        CVT_MODE = 0;
+        break;
     }
   }
-
-  // Test Stepper
-  //STEPPER->step(1000, FORWARD, DOUBLE); 
-  //delay(1000);
-  //STEPPER->step(1000, BACKWARD, DOUBLE); 
-  //delay(1000);
   
   // Engage Stepper motor for either Manual or Pull Mode
-  if (PULL_MODE) {
+  if (CVT_MODE) {
     if (PULL_OUT > 0) {
-      // STEPPER->step(100, FORWARD, DOUBLE); 
-      // Serial.println("Auto forward");
+      STEPPER->step(100, FORWARD, DOUBLE); 
     }
     else if (PULL_OUT < 0) {
-      // STEPPER->step(100, BACKWARD, DOUBLE);
-      // Serial.println("Auto backward");
+      STEPPER->step(100, BACKWARD, DOUBLE);
     }
   }
   else {
     if (MANUAL_OUT > 0) {
-      // STEPPER->step(100, FORWARD, DOUBLE); 
-      // Serial.println("Manual forward");
+      STEPPER->step(100, FORWARD, DOUBLE); 
     }
     else if (MANUAL_OUT < 0) {
-      // STEPPER->step(100, BACKWARD, DOUBLE);
-      // Serial.println("Manual backward");
+      STEPPER->step(100, BACKWARD, DOUBLE);
     }
   }
   
   // Output string buffer
-  sprintf(DATA_BUFFER, "{'driveshaft_rpm':%d,'wheel_rpm':%d,'engine_rpm':%d,'cvt_ratio':%s,'diff_ratio:%s,'pull_mode':%d}", DRIVESHAFT_RPM, WHEEL_RPM,  ENGINE_RPM, CVT_RATIO_S, DIFF_RATIO_S, PULL_MODE);
+  sprintf(DATA_BUFFER, "{'driveshaft_rpm':%d,'wheel_rpm':%d,'engine_rpm':%d,'cvt_ratio':%s,'diff_ratio:%s,'cvt_mode':%d}", DRIVESHAFT_RPM, WHEEL_RPM,  ENGINE_RPM, CVT_RATIO_S, DIFF_RATIO_S, CVT_MODE);
   sprintf(OUTPUT_BUFFER, "{'uid':'%s',data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
 }
