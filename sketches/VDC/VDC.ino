@@ -56,8 +56,13 @@ char DATA_BUFFER[DATA_SIZE];
 
 // Create PID controller objects
 double STEERING_SET, STEERING_IN, STEERING_OUT;
-double BALLAST_SET, BALLAST_IN, BALLAST_OUT;
+double STEERING_OUT_MIN = -400;
+double STEERING_OUT_MAX = 400;
 PID STEERING_PID(&STEERING_IN, &STEERING_OUT, &STEERING_SET, 5, 0.5, 0, DIRECT);
+
+double BALLAST_SET, BALLAST_IN, BALLAST_OUT;
+double BALLAST_OUT_MIN = -400;
+double BALLAST_OUT_MAX = 400;
 PID BALLAST_PID(&BALLAST_IN, &BALLAST_OUT, &BALLAST_SET, 2, 5, 1, DIRECT);
 
 DualVNH5019MotorShield VDC; // M1 is Steering, M2 is Ballast
@@ -72,10 +77,14 @@ void setup() {
   pinMode(SUSPENSION_POSITION_PIN, INPUT);
   
   // TODO: Need a calibrated initial ballast/steering setpoints
-  BALLAST_SET = 0; 
   STEERING_SET = 512;
   STEERING_PID.SetMode(AUTOMATIC);
+  STEERING_PID.SetOutputLimits(STEERING_OUT_MIN, STEERING_OUT_MAX);
+
+  BALLAST_SET = 0; 
   BALLAST_PID.SetMode(AUTOMATIC);
+  BALLAST_PID.SetOutputLimits(BALLAST_OUT_MIN, BALLAST_OUT_MAX);
+
 }
 
 /* --- LOOP --- */
@@ -91,8 +100,7 @@ void loop() {
   
   // M1 - Set steering actuator power output
   if (VDC.getM1CurrentMilliamps() < STEERING_MILLIAMP_LIMIT) {
-    int val = map(int(STEERING_OUT), 0, 255, 400, -400);
-    VDC.setM1Speed(val);
+    VDC.setM1Speed(int(STEERING_OUT));
   }
   else {
     VDC.setM1Speed(0);
