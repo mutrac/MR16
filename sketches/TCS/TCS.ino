@@ -18,7 +18,8 @@
 const char UID[] = "TCS";
 const char PULL[] = "pull";
 const char PUSH[] = "push";
-const char PULL_CMD = 'A';
+const char PULL_CMD = 'P';
+const char AUTO_CMD = 'A';
 const char MANUAL_CMD = 'M';
 const int BAUD = 9600;
 const int DATA_SIZE = 128;
@@ -34,6 +35,8 @@ const int ENCODER_B_PIN = 30;
 
 // Analog Input
 const int CVT_POSITION_PIN = A0;
+const int CVT_POSITION_MIN = 512; 
+const int CVT_POSITION_MAX = 1024; 
 
 // Stepper Motor Settings
 const int STEPPER_SPEED = 600;
@@ -41,6 +44,9 @@ const int STEPPER_RESOLUTION = 48;
 const int STEPPER_TYPE = 2; // biploar
 const int STEPPER_DISENGAGE = 0; // the encoder reading when the stepper motor engages/disenchages the CVT
 const int STEPPER_MAX = 1024; // the encoder reading when the stepper is fully extended
+const int STEPPER_RESET_TIME = 1000; // time it takes to fully retract the STEPPER
+const int STEPPER_OUT_MIN = -100;
+const int STEPPER_OUT_MAX = 100;
 
 // Interrupt pulses/rev
 const int DRIVESHAFT_PULSES_PER_REV = 12;
@@ -83,6 +89,8 @@ double MANUAL_D = 0.25;
 double MANUAL_SET;
 double MANUAL_IN;
 double MANUAL_OUT;
+double MANUAL_OUT_MIN = -100;
+double MANUAL_OUT_MAX = 100;
 PID MANUAL_PID(&MANUAL_IN, &MANUAL_OUT, &MANUAL_SET, MANUAL_P, MANUAL_I, MANUAL_D, DIRECT);
 
 // Pull mode PID
@@ -92,6 +100,8 @@ double PULL_D = 0.25;
 double PULL_SET;
 double PULL_IN;
 double PULL_OUT;
+double PULL_OUT_MIN = -100;
+double PULL_OUT_MAX = 100;
 PID PULL_PID(&PULL_IN, &PULL_OUT, &PULL_SET, PULL_P, PULL_I, PULL_D, DIRECT);
 
 // Initialize stepper motor
@@ -128,14 +138,16 @@ void setup() {
   
   // Analog Inputs
   pinMode(CVT_POSITION_PIN, INPUT);
-  
-  // Initialize Manual PID
+ 
+   // Initialid MANUAL MODE PID
   MANUAL_PID.SetMode(AUTOMATIC);
   MANUAL_PID.SetTunings(MANUAL_P, MANUAL_I, MANUAL_D);
+  MANUAL_PID.SetOutputLimits(MANUAL_OUT_MIN, MANUAL_OUT_MAX);
   
-  // Initialid Pull PID
+  // Initialid PULL MODE PID
   PULL_PID.SetMode(AUTOMATIC);
   PULL_PID.SetTunings(PULL_P, PULL_I, PULL_D);
+  PULL_PID.SetOutputLimits(PULL_OUT_MIN, PULL_OUT_MAX);
   
   // Initilize asynch interrupts
   attachInterrupt(SPARKPLUG_PIN, sparkplug_counter, RISING);
@@ -146,6 +158,9 @@ void setup() {
   // Initialize Stepper
   AFMS.begin();  // create with the default frequency 1.6KHz
   STEPPER->setSpeed(STEPPER_SPEED); // the stepper speed in rpm
+  STEPPER->step(STEPPER_MAX, BACKWARD, DOUBLE); // fully retract the STEPPER
+  delay(STEPPER_RESET_TIME);
+  ENCODER_PULSES = 0; // reset the ENCODER to zero
 }
 
 /* --- Loop --- */
@@ -175,12 +190,17 @@ void loop() {
   
   // Calculate MANUAL controller output
   // In this mode, the encoder position to track the joystick position
+  // the reading of CVT_POSITION is mapped to the range of the encoder
+  // The CVT_POSITION (in ENCODER_PULSE units) is used as the SETPOINT to the PID object
+  // The ENCODER_PULSES is used as the INPUT to the PID object
   MANUAL_IN = double(ENCODER_PULSES);
-  MANUAL_SET = double(CVT_POSITION);
+  MANUAL_SET = double (map(CVT_POSITION, CVT_POSITION_MIN, CVT_POSITION_MAX, 0, STEPPER_MAX));
   MANUAL_PID.Compute();
   
   // Calculate PULL (CVT Ratio Tracking) controller output
   // In this mode, the engine RPM is maximized by reducing the cvt_ratio until the disengagement threshold is reached
+  // CVT_RATIO is used as the INPUT to the PID object
+  // CVT_POSITION is 
   PULL_IN = double(CVT_RATIO);
   PULL_SET = double(CVT_POSITION);
   PULL_PID.Compute(); // ghost-writes to PULL_PID
@@ -200,19 +220,19 @@ void loop() {
   
   // Engage Stepper motor for either Manual or Pull Mode
   if (CVT_MODE) {
-    if (PULL_OUT > 0) {
-      STEPPER->step(100, FORWARD, DOUBLE); 
+    if (PULL_IN > 0) {
+      STEPPER->step(abs(int(PULL_OUT)), FORWARD, DOUBLE); 
     }
-    else if (PULL_OUT < 0) {
-      STEPPER->step(100, BACKWARD, DOUBLE);
+    else if (PULL_IN < 0) {
+      STEPPER->step(abs(int(PULL_OUT)), BACKWARD, DOUBLE);
     }
   }
   else {
     if (MANUAL_OUT > 0) {
-      STEPPER->step(100, FORWARD, DOUBLE); 
+      STEPPER->step(abs(int(MANUAL_OUT)), FORWARD, DOUBLE); 
     }
-    else if (MANUAL_OUT < 0) {
-      STEPPER->step(100, BACKWARD, DOUBLE);
+    else if (MANUAL_IN < 0) {
+      STEPPER->step(abs(int(MANUAL_OUT)), BACKWARD, DOUBLE);
     }
   }
   
