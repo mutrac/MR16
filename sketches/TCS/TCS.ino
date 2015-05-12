@@ -53,6 +53,10 @@ const int DRIVESHAFT_PULSES_PER_REV = 12;
 const int WHEEL_PULSES_PER_REV = 10;
 const int ENGINE_PULSES_PER_REV = 2;
 
+// Engine RPM
+const int ENGINE_RPM_MIN = 1550;
+const int ENGINE_RPM_MAX = 3600;
+
 // CVT Settings
 const float CVT_RATIO_MAX = 4.13;
 const float CVT_RATIO_MIN = 0.77;
@@ -84,8 +88,8 @@ float DIFF_RATIO = DIFF_RATIO_MIN;
 
 // Manual mode PID
 double MANUAL_P = 1;
-double MANUAL_I = 0.05;
-double MANUAL_D = 0.25;
+double MANUAL_I = 0;
+double MANUAL_D = 0;
 double MANUAL_SET;
 double MANUAL_IN;
 double MANUAL_OUT;
@@ -95,8 +99,8 @@ PID MANUAL_PID(&MANUAL_IN, &MANUAL_OUT, &MANUAL_SET, MANUAL_P, MANUAL_I, MANUAL_
 
 // Pull mode PID
 double PULL_P = 1;
-double PULL_I = 0.05;
-double PULL_D = 0.25;
+double PULL_I = 0;
+double PULL_D = 0;
 double PULL_SET;
 double PULL_IN;
 double PULL_OUT;
@@ -174,22 +178,33 @@ void loop() {
   // Wait and get volatile values
   TIME = millis();
   delay(INTERVAL);
+  
+  // Drive Shaft RPM
   DRIVESHAFT_HIST.add(DRIVESHAFT_PULSES / float(millis() - TIME));
-  ENGINE_HIST.add(SPARKPLUG_PULSES / float(millis() - TIME));
-  WHEEL_HIST.add(WHEEL_PULSES / float(millis() - TIME));
   DRIVESHAFT_RPM = 60 * DRIVESHAFT_HIST.getAverage() / DRIVESHAFT_PULSES_PER_REV;
+  
+  // Engine RPM
+  ENGINE_HIST.add(SPARKPLUG_PULSES / float(millis() - TIME));
   ENGINE_RPM = 60 * ENGINE_HIST.getAverage() / ENGINE_PULSES_PER_REV;
+  
+  // Wheel RPM
+  WHEEL_HIST.add(WHEEL_PULSES / float(millis() - TIME));
   WHEEL_RPM = 60 * WHEEL_HIST.getAverage() / WHEEL_PULSES_PER_REV;
+  
+  // Determine the CVT Ratio
+  // TODO: Should it handle disengaged CVT?
   CVT_RATIO = ENGINE_RPM / DRIVESHAFT_RPM;
-  DIFF_RATIO = DRIVESHAFT_RPM / WHEEL_RPM;
   dtostrf(CVT_RATIO, DIGITS, PRECISION, CVT_RATIO_S);
+
+  // Determine the Differential Ratio
+  DIFF_RATIO = DRIVESHAFT_RPM / WHEEL_RPM;
   dtostrf(DIFF_RATIO, DIGITS, PRECISION, DIFF_RATIO_S);
     
   // Read the position of the joystick
   CVT_POSITION = analogRead(CVT_POSITION_PIN);
   
   // Calculate MANUAL controller output
-  // In this mode, the encoder position to track the joystick position
+  // In this mode, the encoder to tracks the joystick position
   // the reading of CVT_POSITION is mapped to the range of the encoder
   // The CVT_POSITION (in ENCODER_PULSE units) is used as the SETPOINT to the PID object
   // The ENCODER_PULSES is used as the INPUT to the PID object
@@ -198,12 +213,11 @@ void loop() {
   MANUAL_PID.Compute();
   
   // Calculate PULL (CVT Ratio Tracking) controller output
-  // In this mode, the engine RPM is maximized by reducing the cvt_ratio until the disengagement threshold is reached
+  // In this mode, the ENGINE_RPM is maximized by reducing the CVT_RATIO until the disengagement threshold is reached
   // CVT_RATIO is used as the INPUT to the PID object
-  // CVT_POSITION is 
-  PULL_IN = double(CVT_RATIO);
-  PULL_SET = double(CVT_POSITION);
-  PULL_PID.Compute(); // ghost-writes to PULL_PID
+  PULL_IN = double(ENGINE_RPM);
+  PULL_SET = double(ENGINE_RPM_MAX);
+  PULL_PID.Compute(); // ghost-writes to PULL_OUT
    
   // Set CVT Mode
   if (Serial.available()) {
@@ -237,12 +251,20 @@ void loop() {
   }
   
   // Output string buffer
-  sprintf(DATA_BUFFER, "{'driveshaft_rpm':%d,'wheel_rpm':%d,'engine_rpm':%d,'cvt_ratio':%s,'diff_ratio:%s,'cvt_mode':%d}", DRIVESHAFT_RPM, WHEEL_RPM,  ENGINE_RPM, CVT_RATIO_S, DIFF_RATIO_S, CVT_MODE);
+  sprintf(DATA_BUFFER, "{'driveshaft_rpm':%d,'wheel_rpm':%d,'engine_rpm':%d,'cvt_ratio':%s,'diff_ratio:%s,'cvt_mode':%d,'cvt_enc':%d}", DRIVESHAFT_RPM, WHEEL_RPM,  ENGINE_RPM, CVT_RATIO_S, DIFF_RATIO_S, CVT_MODE, ENCODER_PULSES);
   sprintf(OUTPUT_BUFFER, "{'uid':'%s',data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
 }
 
 /* --- SYNCHRONOUS TASKS --- */
+// Float to Str
+char *dtostrf (double val, signed char width, unsigned char prec, char *sout) {
+  char fmt[20];
+  sprintf(fmt, "%%%d.%df", width, prec);
+  sprintf(sout, fmt, val);
+  return sout;
+}
+
 // Check Sum
 int checksum() {
   int sum = 0;
