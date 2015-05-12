@@ -1,8 +1,9 @@
 /*
   Engine Safety Controller (ESC)
- McGill ASABE Tractor Team
+  McGill ASABE Engineering Team
  
- Requirements: Arduino Mega
+ Board: Arduino Mega 2560
+ Shields: Dual VNH5019 Motor Shield
  */
 
 /* --- LIBRARIES --- */
@@ -12,11 +13,7 @@
 #include <PID_v1.h>
 #include <RunningMedian.h>
 
-
 /* --- Global Constants --- */
-/// CAN
-
-
 /// Digital Pins
 // D14 Reserved for Serial2 RFID
 // D15 Reserved for Serial2 RFID
@@ -26,9 +23,9 @@ const int LPH_SENSOR_PIN = 18;  // interrupt (#5) required
 const int BUTTON_KILL_PIN = 22;
 const int HITCH_KILL_PIN = 24;
 const int SEAT_KILL_PIN = 26;
-const int SEAT_KILL_PWR = 28;
-const int HITCH_KILL_PWR = 30;
-const int BUTTON_KILL_PWR = 32;
+const int SEAT_KILL_POUT = 28;
+const int HITCH_KILL_POUT = 30;
+const int BUTTON_KILL_POUT = 32;
 
 // Joystick (Digital) 
 const int IGNITION_PIN = 23;
@@ -61,14 +58,14 @@ const int TEMP_SENSOR_PIN = 46; // TODO: find actual pin number
 const int THROTTLE_POS_PIN = A8;
 const int THROTTLE_MIN_PIN = A9;
 const int THROTTLE_MAX_PIN = A10;
-// A11 unused
+const int CVT_GUARD_POUT = A11;
 const int CVT_GUARD_PIN = A12;
 const int PSI_SENSOR_PIN = A13;
 const int LEFT_BRAKE_PIN = A14;
 const int RIGHT_BRAKE_PIN = A15;
 
 /* --- Global Settings --- */ 
-/// CAN
+/// CMQ
 const char UID[] = "ESC";
 const char PUSH[] = "push";
 const char PULL[] = "pull";
@@ -186,20 +183,20 @@ void setup() {
   // Failsafe Seat
   pinMode(SEAT_KILL_PIN, INPUT);
   digitalWrite(SEAT_KILL_PIN, HIGH);
-  pinMode(SEAT_KILL_PWR, OUTPUT);
-  digitalWrite(SEAT_KILL_PWR, LOW);
+  pinMode(SEAT_KILL_POUT, OUTPUT);
+  digitalWrite(SEAT_KILL_POUT, LOW);
   
   // Failsafe Hitch
   pinMode(HITCH_KILL_PIN, INPUT);
   digitalWrite(HITCH_KILL_PIN, HIGH);
-  pinMode(HITCH_KILL_PWR, OUTPUT);
-  digitalWrite(HITCH_KILL_PWR, LOW);
+  pinMode(HITCH_KILL_POUT, OUTPUT);
+  digitalWrite(HITCH_KILL_POUT, LOW);
   
   // Failsafe Button
   pinMode(BUTTON_KILL_PIN, INPUT);
   digitalWrite(BUTTON_KILL_PIN, HIGH);
-  pinMode(BUTTON_KILL_PWR, OUTPUT);
-  digitalWrite(BUTTON_KILL_PWR, LOW);
+  pinMode(BUTTON_KILL_POUT, OUTPUT);
+  digitalWrite(BUTTON_KILL_POUT, LOW);
 
   // Joystick Digital Input
   pinMode(IGNITION_PIN, INPUT);
@@ -227,21 +224,26 @@ void setup() {
   pinMode(STARTER_RELAY_PIN, OUTPUT);
   pinMode(REBOOT_RELAY_PIN, OUTPUT);
 
-  // Analog Input
+  // Brakes
   pinMode(RIGHT_BRAKE_PIN, INPUT);
   pinMode(LEFT_BRAKE_PIN, INPUT);
+  
+  // CVT Guard
+  pinMode(CVT_GUARD_POUT, OUTPUT);
+  digitalWrite(CVT_GUARD_POUT, LOW);
   pinMode(CVT_GUARD_PIN, INPUT);
+  digitalWrite(CVT_GUARD_PIN, HIGH);
 
-  // Brake Motors
-  ESC.init();
+  // DualVNH5019 Motor Controller
+  ESC.init(); 
 
-  // PID
+  // Throttle PID Controller
   THROTTLE_PID.SetMode(AUTOMATIC);
   
-  // Temperature
+  // Engine temperature sensor DS18B20
   TEMP_SENSOR.begin();
   
-  // Fuel
+  // Fuel Sensor
   attachInterrupt(LPH_SENSOR_PIN, lph_counter, RISING);
   
   // Begin serial communication
@@ -377,7 +379,8 @@ int set_throttle(int val) {
   }
 }
 
-// Check Brake
+/// Check Brake
+// Engage the brakes linearly
 int check_brake(int pin) {
   int val = analogRead(pin); // read left brake signal
   if (val > BRAKES_THRESHOLD) {
@@ -392,27 +395,20 @@ int check_brake(int pin) {
 // Returns true if the brake interlock is engaged
 int set_brakes(int left_brake, int right_brake) {
   
+  // Map the brake values for DualVNH5019 output
   int val = (left_brake + right_brake) / 2;
   int output = map(val, BRAKES_MIN, BRAKES_MAX, 0, 400); // linearly map the brakes power output to 0-400
 
-  // Engage brake motor
+  // Engage brakes
   if (ESC.getM2CurrentMilliamps() > BRAKES_MILLIAMP_THRESH) {
     ESC.setM2Speed(0); // disable breaks if over-amp
   }
   else {
     ESC.setM2Speed(output);
   }
-
-  // Check interlock
-  if  (val >= BRAKES_THRESHOLD) {
-    return 1;
-  }
-  else {
-    return 0;
-  }
 }
 
-/// Check Display Mode
+/// Check Switch
 int check_switch(int pin_num) {
   if  (digitalRead(pin_num)) {
     if (digitalRead(pin_num)) {
@@ -453,7 +449,8 @@ int checksum() {
   return val;
 }
 
-/// Check Guard --> Returns true if guard open
+/// Check Guard
+// Returns true if guard is open
 int check_guard(void) {
   if (analogRead(CVT_GUARD_PIN) >= CVT_GUARD_THRESH) {
     if (analogRead(CVT_GUARD_PIN) >= CVT_GUARD_THRESH) {
@@ -468,7 +465,7 @@ int check_guard(void) {
   }
 }
 
-/// Reboot
+/// Reboot the Atom
 void reboot(void) {
   digitalWrite(REBOOT_RELAY_PIN, LOW);
   delay(REBOOT_WAIT);
@@ -510,7 +507,7 @@ void ignition(void) {
   RUN_MODE = 2;
 }
 
-// Get Fuel Rate
+/// Get Fuel Rate
 float get_fuel_lph(void) {
   LPH_TIME_A = millis();
   float lph = (float(LPH_COUNTER) * 0.00038 * 3600.0) / (float(LPH_TIME_B - LPH_TIME_A) / 1000.0);
@@ -542,6 +539,7 @@ float get_oil_psi(void) {
 }
 
 /* --- ASYNCHRONOUS TASKS --- */
+/// Increment the LPH counter
 void lph_counter(void) {
   LPH_COUNTER++;
 }
