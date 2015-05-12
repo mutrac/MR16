@@ -41,6 +41,16 @@ const int SUSPENSION_POSITION_PIN = A5;
 const int STEERING_MILLIAMP_LIMIT = 15000;
 const int BALLAST_MILLIAMP_LIMIT = 15000;
 
+// Calibration Parameters
+const int SUSP_POS_MIN = 200;
+const int SUSP_POS_MAX = 450;
+const int ACT_POS_MIN = 0;
+const int ACT_POS_MAX = 1000;
+const int STR_POS_MIN = 0;
+const int STR_POS_MAX = 1023;
+const int STEERING_GAIN = 5;
+const int STEERING_THRESHOLD = 75;
+
 /* --- GLOBAL VARIABLES --- */
 // Create sensor values
 int CART_MODE = 0;
@@ -94,13 +104,18 @@ void loop() {
   // Set Steering
   STR_POS = analogRead(STEERING_POSITION_PIN);
   ACT_POS = analogRead(ACTUATOR_POSITION_PIN);
-  STEERING_IN = double(ACT_POS);
-  STEERING_SET = double(STR_POS);
-  STEERING_PID.Compute();
   
   // M1 - Set steering actuator power output
   if (VDC.getM1CurrentMilliamps() < STEERING_MILLIAMP_LIMIT) {
-    VDC.setM1Speed(int(STEERING_OUT));
+    int act = map(ACT_POS, ACT_POS_MIN, ACT_POS_MAX, 0, 1023);
+    int str = map(STR_POS, STR_POS_MIN, STR_POS_MAX, 1023, 0);
+    int val = STEERING_GAIN * (act - str);
+    if (abs(val) < STEERING_THRESHOLD) {
+      VDC.setM1Speed(0);
+    }
+    else {
+      VDC.setM1Speed(val);
+    }
   }
   else {
     VDC.setM1Speed(0);
@@ -108,11 +123,6 @@ void loop() {
   /* --- END Steering Subsystem --- */
   
   /* --- START Ballast Subsystm --- */
-  // Get Ballast system parameters and recompute PID (Always do this on an iteration)
-  SUSP_POS = analogRead(SUSPENSION_POSITION_PIN);
-  BALLAST_IN = double(SUSP_POS);
-  BALLAST_PID.Compute();
- 
   // Get next serial cart control commands
   if (Serial.available()) {
     char c = Serial.read();
@@ -137,8 +147,12 @@ void loop() {
   }
   
   // M2 - Set ballast motor power
-  if (CART_MODE) {
-    int val = int(BALLAST_OUT);
+  SUSP_POS = analogRead(SUSPENSION_POSITION_PIN);
+  if (!CART_MODE) {
+    int val;
+    if (SUSP_POS > SUSP_POS_MAX) {val=400;}
+    else if (SUSP_POS < SUSP_POS_MIN) {val=-400;}
+    else {val=0;}
     VDC.setM2Speed(val);
   }
   else {
