@@ -87,7 +87,7 @@ const int REBOOT_WAIT = 1000;
 const int BRAKES_THRESHOLD = 150;
 const int BRAKES_MILLIAMP_THRESH = 15000;
 const int BRAKES_MIN = 0;
-const int BRAKES_MAX = 1024;
+const int BRAKES_MAX = 512;
 
 /// Throttle
 const int THROTTLE_POS_MIN = 274;
@@ -269,22 +269,22 @@ void loop() {
   LEFT_BRAKE = check_brake(LEFT_BRAKE_PIN);
   RIGHT_BRAKE = check_brake(RIGHT_BRAKE_PIN);
   
-  // Engine condition
+  // Check engine condition
   TEMP = get_engine_temp();
   LPH = get_fuel_lph();
   PSI = get_oil_psi();
   
-  // Set Brakes Always
+  // Set brakes ALWAYS
   set_brakes(RIGHT_BRAKE, LEFT_BRAKE);
-  
-  // Adjust throttle limit
+    
+  //  // Adjust throttle limit, either HIGH/LOW, or increment
   if (THROTTLE_HIGH  && !THROTTLE_LOW) {
     THROTTLE = THROTTLE_MAX;
   }
-  if (THROTTLE_LOW && !THROTTLE_HIGH) {
+  else if (THROTTLE_LOW && !THROTTLE_HIGH) {
     THROTTLE = THROTTLE_MIN;
   }
-  if (THROTTLE_UP && !THROTTLE_DOWN) {
+  else if (THROTTLE_UP && !THROTTLE_DOWN) {
     THROTTLE = THROTTLE + THROTTLE_STEP;
   }
   else if (THROTTLE_DOWN && !THROTTLE_UP) {
@@ -298,8 +298,13 @@ void loop() {
       THROTTLE = THROTTLE_MIN;
     }
   }
-  set_throttle(THROTTLE);
-
+  if (!TRIGGER_KILL) {
+    set_throttle(THROTTLE);
+  }
+  else {
+    set_throttle(0); // DISABLE THROTTLE IF OPERATOR RELEASES TRIGGER
+  }
+  
   // (0) If OFF
   if (RUN_MODE == 0) {
     if (RFID_AUTH) {
@@ -325,15 +330,10 @@ void loop() {
       standby();
     }
     else {
-      if (TRIGGER_KILL) {
-        set_throttle(0); // DISABLE THROTTLE IF OPERATOR RELEASES TRIGGER
-      }
-      else {
-        set_throttle(THROTTLE);
-      }
+      /* STUFF PERTAINING TO RUN_MODE 2 */
     }
   }
-  // If in State ? (UNKNOWN)
+  // If ??? (UNKNOWN)
   else {
     kill();
   }

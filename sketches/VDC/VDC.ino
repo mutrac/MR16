@@ -13,8 +13,8 @@
 */
 
 /* --- LIBRARIES --- */
-#include "PID_v1.h"
 #include <DualVNH5019MotorShield.h>
+#include <RunningMedian.h>
 
 /* --- GLOBAL CONSTANTS --- */
 // CMQ Commands (single letter requires single quotes)
@@ -41,15 +41,23 @@ const int SUSPENSION_POSITION_PIN = A5;
 const int STEERING_MILLIAMP_LIMIT = 15000;
 const int BALLAST_MILLIAMP_LIMIT = 15000;
 
-// Calibration Parameters
+// Ballast Calibration Parameters
 const int SUSP_POS_MIN = 200;
 const int SUSP_POS_MAX = 450;
+const int BALLAST_OUTPUT_BACKWARD = -400;
+const int BALLAST_OUTPUT_FORWARD = 400;
+
+// Steering Calibration Parameters
 const int ACT_POS_MIN = 0;
 const int ACT_POS_MAX = 1000;
 const int STR_POS_MIN = 0;
 const int STR_POS_MAX = 1023;
-const int STEERING_GAIN = 5;
+const int STEERING_P_GAIN = 5;
+const int STEERING_I_GAIN = 0;
+const int STEERING_D_GAIN = 0;
 const int STEERING_THRESHOLD = 75;
+const int STEERING_OUTPUT_LEFT = -400;
+const int STEERING_OUTPUT_RIGHT = 400;
 
 /* --- GLOBAL VARIABLES --- */
 // Create sensor values
@@ -59,22 +67,16 @@ int ACT_POS = 0;
 int SUSP_POS = 0;
 int CART_FORWARD = 0;
 int CART_BACKWARD = 0;
+int STEERING_OUTPUT = 0;
+int STEERING_SAMPLES = 5;
+int BALLAST_OUTPUT = 0;
 
 // Create character buffers
 char OUTPUT_BUFFER[OUTPUT_SIZE];
 char DATA_BUFFER[DATA_SIZE];
 
-// Create PID controller objects
-double STEERING_SET, STEERING_IN, STEERING_OUT;
-double STEERING_OUT_MIN = -400;
-double STEERING_OUT_MAX = 400;
-PID STEERING_PID(&STEERING_IN, &STEERING_OUT, &STEERING_SET, 5, 0.5, 0, DIRECT);
-
-double BALLAST_SET, BALLAST_IN, BALLAST_OUT;
-double BALLAST_OUT_MIN = -400;
-double BALLAST_OUT_MAX = 400;
-PID BALLAST_PID(&BALLAST_IN, &BALLAST_OUT, &BALLAST_SET, 2, 5, 1, DIRECT);
-
+// Set motor limits and basic PID
+RunningMedian STEERING_ERROR = RunningMedian(STEERING_SAMPLES);
 DualVNH5019MotorShield VDC; // M1 is Steering, M2 is Ballast
 
 /* --- SETUP --- */
@@ -85,16 +87,6 @@ void setup() {
   pinMode(STEERING_POSITION_PIN, INPUT);
   pinMode(ACTUATOR_POSITION_PIN, INPUT);
   pinMode(SUSPENSION_POSITION_PIN, INPUT);
-  
-  // TODO: Need a calibrated initial ballast/steering setpoints
-  STEERING_SET = 512;
-  STEERING_PID.SetMode(AUTOMATIC);
-  STEERING_PID.SetOutputLimits(STEERING_OUT_MIN, STEERING_OUT_MAX);
-
-  BALLAST_SET = 0; 
-  BALLAST_PID.SetMode(AUTOMATIC);
-  BALLAST_PID.SetOutputLimits(BALLAST_OUT_MIN, BALLAST_OUT_MAX);
-
 }
 
 /* --- LOOP --- */
@@ -104,17 +96,22 @@ void loop() {
   // Set Steering
   STR_POS = analogRead(STEERING_POSITION_PIN);
   ACT_POS = analogRead(ACTUATOR_POSITION_PIN);
+  int act = map(ACT_POS, ACT_POS_MIN, ACT_POS_MAX, 0, 1023);
+  int str = map(STR_POS, STR_POS_MIN, STR_POS_MAX, 1023, 0);
+  int error = act - str;
+  STEERING_ERROR.add(error);
+  int P = STEERING_P_GAIN * error;
+  int I = STEERING_I_GAIN * STEERING_ERROR.getAverage();
+  int D = STEERING_D_GAIN * (STEERING_ERROR.getHighest() - STEERING_ERROR.getLowest());
+  STEERING_OUTPUT = P + I + D;
   
   // M1 - Set steering actuator power output
   if (VDC.getM1CurrentMilliamps() < STEERING_MILLIAMP_LIMIT) {
-    int act = map(ACT_POS, ACT_POS_MIN, ACT_POS_MAX, 0, 1023);
-    int str = map(STR_POS, STR_POS_MIN, STR_POS_MAX, 1023, 0);
-    int val = STEERING_GAIN * (act - str);
-    if (abs(val) < STEERING_THRESHOLD) {
+    if (abs(STEERING_OUTPUT) < STEERING_THRESHOLD) {
       VDC.setM1Speed(0);
     }
     else {
-      VDC.setM1Speed(val);
+      VDC.setM1Speed(STEERING_OUTPUT);
     }
   }
   else {
@@ -149,18 +146,23 @@ void loop() {
   // M2 - Set ballast motor power
   SUSP_POS = analogRead(SUSPENSION_POSITION_PIN);
   if (!CART_MODE) {
-    int val;
-    if (SUSP_POS > SUSP_POS_MAX) {val=400;}
-    else if (SUSP_POS < SUSP_POS_MIN) {val=-400;}
-    else {val=0;}
-    VDC.setM2Speed(val);
+    if (SUSP_POS > SUSP_POS_MAX) {
+      BALLAST_OUTPUT=BALLAST_OUTPUT_FORWARD;
+    }
+    else if (SUSP_POS < SUSP_POS_MIN) {
+      BALLAST_OUTPUT=BALLAST_OUTPUT_BACKWARD;
+    }
+    else {
+      BALLAST_OUTPUT=0;
+    }
+    VDC.setM2Speed(BALLAST_OUTPUT);
   }
   else {
     if (CART_FORWARD && !CART_BACKWARD) {
-      VDC.setM2Speed(400);
+      VDC.setM2Speed(BALLAST_OUTPUT_FORWARD);
     }
     else if (CART_BACKWARD && !CART_FORWARD) {
-      VDC.setM2Speed(-400);
+      VDC.setM2Speed(BALLAST_OUTPUT_BACKWARD);
     }
     else {
       VDC.setM2Speed(0);
