@@ -36,11 +36,11 @@ const int CART_FORWARD_PIN = 31;
 const int CART_BACKWARD_PIN = 33;
 const int CART_MODE_PIN = 35;
 // D37 is a Blocked pin
-const int THROTTLE_UP_PIN = 39; // These are set to an interrupt
-const int THROTTLE_DOWN_PIN = 41; // These are set to an interrupt
-const int RPM_UP_PIN = 43; // These are set to an interrupt
+const int THROTTLE_HIGH_PIN = 39; // These are set to an interrupt
+const int THROTTLE_LOW_PIN = 41; // These are set to an interrupt
+const int THROTTLE_UP_PIN = 43; // These are set to an interrupt
 // D45 is a Blocked pin
-const int RPM_DOWN_PIN = 47;
+const int THROTTLE_DOWN_PIN = 47;
 const int DISPLAY_MODE_PIN = 49;
 
 // Relay Pins 
@@ -56,11 +56,11 @@ const int TEMP_SENSOR_PIN = 46; // TODO: find actual pin number
 // A0 Reserved for DualVNH5019
 // A1 Reserved for DualVNH5019
 const int THROTTLE_POS_PIN = A8;
-const int THROTTLE_MIN_PIN = A9;
-const int THROTTLE_MAX_PIN = A10;
-const int CVT_GUARD_POUT = A11;
-const int CVT_GUARD_PIN = A12;
-const int PSI_SENSOR_PIN = A13;
+const int THROTTLE_POS_MIN_PIN = A9;
+const int THROTTLE_POS_MAX_PIN = A10;
+const int PSI_SENSOR_PIN = A11;
+const int CVT_GUARD_POUT = A12;
+const int CVT_GUARD_PIN = A13;
 const int LEFT_BRAKE_PIN = A14;
 const int RIGHT_BRAKE_PIN = A15;
 
@@ -84,27 +84,24 @@ const int STANDBY_WAIT = 10;
 const int REBOOT_WAIT = 1000;
 
 /// Brake variables
-const int BRAKES_THRESHOLD = 512;
+const int BRAKES_THRESHOLD = 150;
 const int BRAKES_MILLIAMP_THRESH = 15000;
 const int BRAKES_MIN = 0;
 const int BRAKES_MAX = 1024;
 
 /// Throttle
+const int THROTTLE_POS_MIN = 274;
+const int THROTTLE_POS_MAX = 980;
 const int THROTTLE_MIN = 0;
 const int THROTTLE_MAX = 1024;
-const int THROTTLE_MILLIAMP_THRESH = 15000;
-const int THROTTLE_P = 5;
+const int THROTTLE_MILLIAMP_THRESHOLD = 15000;
+const int THROTTLE_P =10 ;
 const int THROTTLE_I = 1;
 const int THROTTLE_D = 2;
 const int THROTTLE_STEP = 64;
 
-/// RPM
-const int RPM_MIN = 1550;
-const int RPM_MAX = 3600;
-const int RPM_STEP = 100;
-
 /// CVT Guard
-const int CVT_GUARD_THRESH = 100;
+const int CVT_GUARD_THRESHOLD = 600;
 
 // Engine sensors
 const int LPH_SAMPLESIZE = 20;
@@ -129,11 +126,10 @@ int DISPLAY_MODE = 0; // the desired display mode on the HUD
 int CART_FORWARD = 0;
 int CART_BACKWARD = 0;
 int CART_MODE = 0;
+int THROTTLE_HIGH = 0;
+int THROTTLE_LOW = 0;
 int THROTTLE_UP = 0;
 int THROTTLE_DOWN = 0;
-int RPM_UP = 0;
-int RPM_DOWN = 0;
-int RPM = RPM_MIN;
 int THROTTLE = THROTTLE_MIN;
 float LPH = 0;
 float PSI = 0;
@@ -152,11 +148,11 @@ char LPH_BUF[DIGITS + PRECISION];
 char PSI_BUF[DIGITS + PRECISION];
 
 /// Throttle PID values
-double THROTTLE_SET, THROTTLE_IN, THROTTLE_OUT;
+int THROTTLE_SET;
+int THROTTLE_IN;
+int THROTTLE_OUT;
 
 /* --- Global Objects --- */
-/// Throttle PID
-PID THROTTLE_PID(&THROTTLE_IN, &THROTTLE_OUT, &THROTTLE_SET, 2, 5, 1, DIRECT);
 
 /// Dual Motor Controller (M1 vs. M2)
 DualVNH5019MotorShield ESC;
@@ -205,24 +201,24 @@ void setup() {
   pinMode(CART_FORWARD_PIN, INPUT);
   pinMode(CART_BACKWARD_PIN, INPUT);
   pinMode(CART_MODE_PIN, INPUT);
+  pinMode(THROTTLE_HIGH_PIN, INPUT);
+  pinMode(THROTTLE_LOW_PIN, INPUT);
   pinMode(THROTTLE_UP_PIN, INPUT);
   pinMode(THROTTLE_DOWN_PIN, INPUT);
-  pinMode(RPM_UP_PIN, INPUT);
-  pinMode(RPM_DOWN_PIN, INPUT);
   pinMode(DISPLAY_MODE_PIN, INPUT);
   
   // Throttle
   pinMode(THROTTLE_POS_PIN, INPUT);
-  pinMode(THROTTLE_MIN_PIN, OUTPUT);
-  digitalWrite(THROTTLE_MIN_PIN, LOW);
-  pinMode(THROTTLE_MAX_PIN, OUTPUT);
-  digitalWrite(THROTTLE_MAX_PIN, HIGH);
+  pinMode(THROTTLE_POS_MIN_PIN, OUTPUT);
+  digitalWrite(THROTTLE_POS_MIN_PIN, LOW);
+  pinMode(THROTTLE_POS_MAX_PIN, OUTPUT);
+  digitalWrite(THROTTLE_POS_MAX_PIN, HIGH);
 
   // Relays
-  pinMode(STOP_RELAY_PIN, OUTPUT);
-  pinMode(REGULATOR_RELAY_PIN, OUTPUT);
-  pinMode(STARTER_RELAY_PIN, OUTPUT);
-  pinMode(REBOOT_RELAY_PIN, OUTPUT);
+  pinMode(STOP_RELAY_PIN, OUTPUT); digitalWrite(STOP_RELAY_PIN, HIGH);
+  pinMode(REGULATOR_RELAY_PIN, OUTPUT); digitalWrite(REGULATOR_RELAY_PIN, HIGH);
+  pinMode(STARTER_RELAY_PIN, OUTPUT); digitalWrite(STARTER_RELAY_PIN, HIGH);
+  pinMode(REBOOT_RELAY_PIN, OUTPUT); digitalWrite(REBOOT_RELAY_PIN, HIGH);
 
   // Brakes
   pinMode(RIGHT_BRAKE_PIN, INPUT);
@@ -237,9 +233,6 @@ void setup() {
   // DualVNH5019 Motor Controller
   ESC.init(); 
 
-  // Throttle PID Controller
-  THROTTLE_PID.SetMode(AUTOMATIC);
-  
   // Engine temperature sensor DS18B20
   TEMP_SENSOR.begin();
   
@@ -263,14 +256,16 @@ void loop() {
   CART_FORWARD = check_switch(CART_FORWARD_PIN);
   CART_BACKWARD = check_switch(CART_BACKWARD_PIN);
   CART_MODE = check_switch(CART_MODE_PIN);
-  RPM_UP = check_switch(RPM_UP_PIN);
-  RPM_DOWN = check_switch(RPM_DOWN_PIN);
   THROTTLE_UP = check_switch(THROTTLE_UP_PIN);
   THROTTLE_DOWN = check_switch(THROTTLE_DOWN_PIN);
+  THROTTLE_HIGH = check_switch(THROTTLE_HIGH_PIN);
+  THROTTLE_LOW = check_switch(THROTTLE_LOW_PIN);
 
   // Check non-switches
   CVT_GUARD = check_guard();
-  RFID_AUTH = check_rfid();
+  if (!RFID_AUTH) {
+    RFID_AUTH = check_rfid();
+  }
   LEFT_BRAKE = check_brake(LEFT_BRAKE_PIN);
   RIGHT_BRAKE = check_brake(RIGHT_BRAKE_PIN);
   
@@ -281,24 +276,14 @@ void loop() {
   
   // Set Brakes Always
   set_brakes(RIGHT_BRAKE, LEFT_BRAKE);
-
-  // Adjust RPM limit
-  if (RPM_UP && !RPM_DOWN) {
-      RPM = RPM + RPM_STEP;
-  }
-  else if (RPM_DOWN && !RPM_UP) {
-    RPM = RPM - RPM_STEP;
-  }
-  else {
-    if (RPM >= RPM_MAX) {
-      RPM = RPM_MAX;
-    }
-    else if (RPM <= RPM_MIN) {
-      RPM = RPM_MIN;
-    }
-  }
   
   // Adjust throttle limit
+  if (THROTTLE_HIGH  && !THROTTLE_LOW) {
+    THROTTLE = THROTTLE_MAX;
+  }
+  if (THROTTLE_LOW && !THROTTLE_HIGH) {
+    THROTTLE = THROTTLE_MIN;
+  }
   if (THROTTLE_UP && !THROTTLE_DOWN) {
     THROTTLE = THROTTLE + THROTTLE_STEP;
   }
@@ -313,6 +298,7 @@ void loop() {
       THROTTLE = THROTTLE_MIN;
     }
   }
+  set_throttle(THROTTLE);
 
   // (0) If OFF
   if (RUN_MODE == 0) {
@@ -356,7 +342,7 @@ void loop() {
   dtostrf(LPH, DIGITS, PRECISION, LPH_BUF);
   dtostrf(TEMP, DIGITS, PRECISION, TEMP_BUF);
   dtostrf(PSI, DIGITS, PRECISION, PSI_BUF);
-  sprintf(DATA_BUFFER, "{'run_mode':%d,'display_mode':%d,'right_brake':%d,'left_brake':%d,'cvt_guard':%d,'seat':%d,'hitch':%d,'ignition':%d,'rfid':'%d','cart_mode':%d,'cart_fwd':%d,'cart_bwd':%d','rpm'%d,'throttle':%d}", RUN_MODE, DISPLAY_MODE, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, SEAT_KILL, HITCH_KILL, IGNITION, RFID_AUTH, CART_MODE, CART_FORWARD, CART_BACKWARD, RPM, THROTTLE);
+  sprintf(DATA_BUFFER, "{'run_mode':%d,'display_mode':%d,'right_brake':%d,'left_brake':%d,'cvt_guard':%d,'seat':%d,'hitch':%d,'ignition':%d,'rfid':'%d','cart_mode':%d,'cart_fwd':%d,'cart_bwd':%d','throttle':%d}", RUN_MODE, DISPLAY_MODE, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, SEAT_KILL, HITCH_KILL, IGNITION, RFID_AUTH, CART_MODE, CART_FORWARD, CART_BACKWARD, THROTTLE);
   sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
   Serial.flush();
@@ -366,16 +352,16 @@ void loop() {
 /// Set Throttle
 int set_throttle(int val) {
   THROTTLE_SET = val;
-  THROTTLE_IN = analogRead(THROTTLE_POS_PIN); // get the position feedback from the linear actuator
-  THROTTLE_PID.Compute(); // this ghost-overwrites the 'THROTTLE_OUT' variable
+  THROTTLE_IN = map(analogRead(THROTTLE_POS_PIN), THROTTLE_POS_MIN, THROTTLE_POS_MAX, 1024, 0); // get the position feedback from the linear actuator
+  int error = THROTTLE_IN - THROTTLE_SET;
+  THROTTLE_OUT = -1 * THROTTLE_P * map(error, -1024, 1024, -400, 400);
   
   // Engage throttle actuator
-  if (ESC.getM1CurrentMilliamps() >  THROTTLE_MILLIAMP_THRESH) {
-    ESC.setM1Speed(0); // disable if over-amp
+  if (ESC.getM1CurrentMilliamps() >  THROTTLE_MILLIAMP_THRESHOLD) {
+    ESC.setM2Speed(0); // disable if over-amp
   }
   else {
-    int output = map(THROTTLE_OUT, 0, 255, -400, 400);
-    ESC.setM1Speed(output);
+    ESC.setM2Speed(THROTTLE_OUT);
   }
 }
 
@@ -401,10 +387,10 @@ int set_brakes(int left_brake, int right_brake) {
 
   // Engage brakes
   if (ESC.getM2CurrentMilliamps() > BRAKES_MILLIAMP_THRESH) {
-    ESC.setM2Speed(0); // disable breaks if over-amp
+    ESC.setM1Speed(0); // disable breaks if over-amp
   }
   else {
-    ESC.setM2Speed(output);
+    ESC.setM1Speed(output);
   }
 }
 
@@ -452,17 +438,13 @@ int checksum() {
 /// Check Guard
 // Returns true if guard is open
 int check_guard(void) {
-  if (analogRead(CVT_GUARD_PIN) >= CVT_GUARD_THRESH) {
-    if (analogRead(CVT_GUARD_PIN) >= CVT_GUARD_THRESH) {
+  int val = analogRead(CVT_GUARD_PIN);
+  if (val <= CVT_GUARD_THRESHOLD) {
       return 1;
     }
     else {
       return 0;
     }
-  }
-  else {
-    return 0;
-  }
 }
 
 /// Reboot the Atom
