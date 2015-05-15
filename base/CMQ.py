@@ -152,7 +152,7 @@ class CMQ:
                 return self.generate_event('CMQ', 'error', '%s failed checksum' % dev.name)
             pretty_print('CMQ', 'Read from %s' % dev.name)
         except Exception as e:
-            return self.generate_event('CMQ', 'error', 'No data from %s' % dev.name)
+            return self.generate_event('CMQ', 'error', 'No data from %s' % dev.uid)
         
         ## Follow rule-base
         data = event['data']
