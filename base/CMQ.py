@@ -151,6 +151,8 @@ class CMQ:
             if not self.checksum(event):  #! TODO: check sum here?
                 return self.generate_event('CMQ', 'error', '%s failed checksum' % dev.name)
             pretty_print('CMQ', 'Read from %s' % dev.name)
+        except SyntaxError as e:
+            return self.generate_event('CMQ', 'error', 'Parse failed on %s (%s)' % (dev.uid, dev.name))
         except Exception as e:
             return self.generate_event('CMQ', 'error', 'NO DATA from %s (%s)' % (dev.uid, dev.name))
         
@@ -179,7 +181,7 @@ class CMQ:
                         pretty_print('CMQ', 'Flushing %s buffer' % str(target))
                         target_dev.port.flushInput()
                         pretty_print('CMQ', 'Routing %s command to %s' % (str(cmd), str(target)))
-                        target_dev.port.write(cmd)
+                        target_dev.port.write(cmd + '\n')
                     except Exception as e:
                         pretty_print('CMQ', 'ERROR: Failed to follow rule -- %s' % desc)
         return event
