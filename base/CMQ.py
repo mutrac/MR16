@@ -44,7 +44,7 @@ Controller Class
 This is a USB device which is part of a MIMO system
 """
 class Controller:
-    def __init__(self, uid, name, baud=9600, timeout=1.0, rules=[], port_attempts=3, read_attempts=10):
+    def __init__(self, uid, name, baud=9600, timeout=0.1, rules=[], port_attempts=3, read_attempts=5):
         self.name = name
         self.uid = uid # e.g. VDC
         self.baud = baud
@@ -62,12 +62,15 @@ class Controller:
                 for j in range(read_attempts):
                     string = self.port.readline()
                     if string is not (None or ''):
-                        pretty_print('CMQ', 'read: %s' % string)
                         try:
+                            print string
                             data = ast.literal_eval(string)
+                            pretty_print('CMQ', 'Read OK from %s' % data['uid'])
                             if data['uid'] == self.uid:
-                                pretty_print('CMQ', 'found matching UID')
-                                return
+                                pretty_print('CMQ', 'Found matching UID')
+                                return # return the Controller object
+                            else:
+                                break
                         except Exception as error:
                             pretty_print('CMQ', str(error))
             except Exception as error:
@@ -174,7 +177,7 @@ class CMQ:
                 if (data[key] == val): # TODO: might have to handle Unicode
                     try:
                         pretty_print('CMQ', 'Routing %s command to %s' % (str(cmd), str(target)))
-                        target_dev.port.write(msg)
+                        target_dev.port.write(cmd)
                     except Exception as e:
                         pretty_print('CMQ', 'ERROR: Failed to follow rule -- %s' % desc)
         return event

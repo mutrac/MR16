@@ -17,7 +17,7 @@
                 "conditions" : [
                     ["pull_mode", 0]
                 ],
-                "description" : "Manual mode engaged",
+                "description" : "TCS Manual mode engaged",
                 "target" : "TCS",
                 "command" : "M"
             },
@@ -25,7 +25,7 @@
                 "conditions" : [
                     ["cart_fwd", 1]
                 ],
-                "description" : "Cart forward pressed",
+                "description" : "Cart forward override",
                 "target" : "VDC",
                 "command" : "F"
             },
@@ -33,7 +33,7 @@
                 "conditions" : [
                     ["cart_bwd", 1]
                 ],
-                "description" : "Cart backward pressed",
+                "description" : "Cart backward override",
                 "target" : "VDC",
                 "command" : "B"
             },

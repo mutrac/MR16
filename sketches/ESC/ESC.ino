@@ -173,9 +173,6 @@ RunningMedian TEMP_HIST = RunningMedian(TEMP_SAMPLESIZE);
 
 /* --- SETUP --- */
 void setup() {
-  
-  // Reboot host
-  reboot();
  
   // Initialize RFID authentication device
   Serial3.begin(RFID_BAUD); // Pins 14 and 15
@@ -225,6 +222,9 @@ void setup() {
   pinMode(STARTER_RELAY_PIN, OUTPUT); digitalWrite(STARTER_RELAY_PIN, HIGH);
   pinMode(REBOOT_RELAY_PIN, OUTPUT); digitalWrite(REBOOT_RELAY_PIN, HIGH);
 
+  // Reboot host
+  reboot();
+  
   // Brakes
   pinMode(RIGHT_BRAKE_PIN, INPUT);
   pinMode(LEFT_BRAKE_PIN, INPUT);
@@ -264,13 +264,21 @@ void loop() {
   DISPLAY_MODE = check_switch(DISPLAY_MODE_PIN);
   CART_FORWARD = check_switch(CART_FORWARD_PIN);
   CART_BACKWARD = check_switch(CART_BACKWARD_PIN);
-  CART_MODE = check_switch(CART_MODE_PIN);
-  PULL_MODE = check_switch(PULL_MODE_PIN);
   THROTTLE_UP = check_switch(THROTTLE_UP_PIN);
   THROTTLE_DOWN = check_switch(THROTTLE_DOWN_PIN);
   THROTTLE_HIGH = check_switch(THROTTLE_HIGH_PIN);
   THROTTLE_LOW = check_switch(THROTTLE_LOW_PIN);
-
+  
+  // Change VDC and TCS modes
+  if (check_switch(CART_MODE_PIN)) {
+    if (CART_MODE == 1) { CART_MODE = 0; }
+    else { CART_MODE = 1; }
+  }
+  if (check_switch(PULL_MODE_PIN)) {
+     if (PULL_MODE == 1) { PULL_MODE = 0; }
+    else { PULL_MODE = 1; }
+  }
+  
   // Check non-switches
   CVT_GUARD = check_guard();
   if (RFID_AUTH == 0) {
@@ -354,7 +362,7 @@ void loop() {
   dtostrf(PSI, DIGITS, PRECISION, PSI_BUF);
   
   // Output to USB Serial
-  sprintf(DATA_BUFFER, "{'run_mode':%d,'display_mode':%d,'right_brake':%d,'left_brake':%d,'cvt_guard':%d,'button':%d,'seat':%d,'hitch':%d,'ignition':%d,'rfid':'%d','cart_mode':%d,'cart_fwd':%d,'cart_bwd':%d','throttle':%d,'trigger':%d,'pull_mode':%d}", RUN_MODE, DISPLAY_MODE, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, BUTTON_KILL, SEAT_KILL, HITCH_KILL, IGNITION, RFID_AUTH, CART_MODE, CART_FORWARD, CART_BACKWARD, THROTTLE, TRIGGER_KILL, PULL_MODE);
+  sprintf(DATA_BUFFER, "{'run_mode':%d,'display_mode':%d,'right_brake':%d,'left_brake':%d,'cvt_guard':%d,'button':%d,'seat':%d,'hitch':%d,'ignition':%d,'rfid':%d,'cart_mode':%d,'cart_fwd':%d,'cart_bwd':%d,'throttle':%d,'trigger':%d,'pull_mode':%d}", RUN_MODE, DISPLAY_MODE, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, BUTTON_KILL, SEAT_KILL, HITCH_KILL, IGNITION, RFID_AUTH, CART_MODE, CART_FORWARD, CART_BACKWARD, THROTTLE, TRIGGER_KILL, PULL_MODE);
   sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
   Serial.flush();

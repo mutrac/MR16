@@ -43,11 +43,11 @@ const int ENCODER_B_PIN = 30;
 const int CVT_POSITION_PIN = A0;
 
 // Stepper Motor Settings
-const int STEPPER_SPEED = 600;
+const int STEPPER_SPEED = 500;
 const int STEPPER_RESOLUTION = 1000;
 const int STEPPER_TYPE = 2; // biploar
 const int STEPPER_DISENGAGE = 0; // the encoder reading when the stepper motor engages/disenchages the CVT
-const int STEPPER_MAX = 15000; // the encoder reading when the stepper is fully extended
+int STEPPER_MAX = 10500; // the encoder reading when the stepper is fully extended
 const int STEPPER_RESET_TIME = 1000; // time it takes to fully retract the STEPPER
 const int STEPPER_WAIT = 1000; // reset wait time
 
@@ -82,8 +82,8 @@ const int CHARS = 8;
 
 /* --- Global Variables --- */
 // Calibratable CVT Joystick potentiometer
-int CVT_POSITION_MIN = 1700; 
-int CVT_POSITION_MAX = 2900; 
+int CVT_POSITION_MIN = 2200; 
+int CVT_POSITION_MAX = 3500; 
 
 // Float strings
 char CVT_RATIO_S[CHARS];
@@ -100,7 +100,7 @@ double MANUAL_P = 0.2;
 double MANUAL_I = 0;
 double MANUAL_D = 0;
 double MANUAL_OUT_MIN = 16;
-double MANUAL_OUT_MAX = 256;
+double MANUAL_OUT_MAX = 4096;
 double MANUAL_SET;
 double MANUAL_IN;
 double MANUAL_OUT;
@@ -150,7 +150,7 @@ void setup() {
   
   // Analog Inputs
   pinMode(CVT_POSITION_PIN, INPUT);
-  analogReadResolution(12);
+  analogReadResolution(12); // 
   
   // Initilize asynch interrupts
   pinMode(ENCODER_A_PIN, INPUT);
@@ -165,23 +165,48 @@ void setup() {
   attachInterrupt(ENCODER_B_PIN, encoder_counter_B, CHANGE);
 
   // Reset Stepper
+  Serial.println("Resetting stepper");
   AFMS.begin();  // create with the default frequency 1.6KHz
   STEPPER->setSpeed(STEPPER_SPEED); // the stepper speed in rpm
-  int encoder_change = 200;
   int encoder_1;
   int encoder_2;
-  while (encoder_change > 5) {
+  int encoder_change = 100;
+  
+  // Retract to Min
+  while (encoder_change > 16) {
     encoder_1 = ENCODER_PULSES;
-    STEPPER->step(100, BACKWARD, DOUBLE); // fully retract the STEPPER
+    STEPPER->step(32, BACKWARD, DOUBLE); // fully retract the STEPPER
     encoder_2 = ENCODER_PULSES;
     encoder_change = abs(encoder_1 - encoder_2);
   }
   ENCODER_PULSES = 0; // reset the ENCODER to zero
+  Serial.println("Encoder zero'd");
+  
+  // Extend to Max
+  encoder_change = 100;
+  while (encoder_change > 16) {
+    encoder_1 = ENCODER_PULSES;
+    STEPPER->step(32, FORWARD, DOUBLE); // fully retract the STEPPER
+    encoder_2 = ENCODER_PULSES;
+    encoder_change = abs(encoder_1 - encoder_2);
+  }
+  STEPPER_MAX = ENCODER_PULSES;
+  Serial.println("Encoder max'd");
+  
+  // Retract to Min
+  encoder_change = 100;
+  while (encoder_change > 16) {
+    encoder_1 = ENCODER_PULSES;
+    STEPPER->step(32, BACKWARD, DOUBLE); // fully retract the STEPPER
+    encoder_2 = ENCODER_PULSES;
+    encoder_change = abs(encoder_1 - encoder_2);
+  }
+  ENCODER_PULSES = 0; // reset the ENCODER to zero
+  Serial.println("Encoder zero'd");
 }
 
 /* --- Loop --- */
 void loop() {
-  
   // Reset looping counters (doesn't include the encoder)
   SPARKPLUG_PULSES = 0;
   DRIVESHAFT_PULSES = 0;
@@ -189,7 +214,6 @@ void loop() {
 
   // Wait and get volatile values
   TIME = millis();
-  delay(INTERVAL);
   
   // Drive Shaft RPM
   DRIVESHAFT_HIST.add(DRIVESHAFT_PULSES);
@@ -220,7 +244,10 @@ void loop() {
   else if (CVT_POSITION > CVT_POSITION_MAX ) {
     CVT_POSITION_MAX = CVT_POSITION;
   } // auto calibrate maxima
-  
+  //Serial.println(CVT_POSITION_MIN);
+  //Serial.println(CVT_POSITION_MAX);
+  //Serial.println(CVT_POSITION);
+
   // Calculate MANUAL controller output
   // In this mode, the encoder to tracks the joystick position
   // the reading of CVT_POSITION is mapped to the range of the encoder
@@ -232,8 +259,11 @@ void loop() {
   if (abs(MANUAL_OUT) < MANUAL_OUT_MIN) { MANUAL_OUT = 0;} // Limit small motions to keep stepper cool
   else if (abs(MANUAL_OUT) > MANUAL_OUT_MAX) {
     if (MANUAL_OUT > 0) { MANUAL_OUT = MANUAL_OUT_MAX; }
-    else if (MANUAL_OUT > 0) { MANUAL_OUT = MANUAL_OUT_MAX; }
+    else if (MANUAL_OUT < 0) { MANUAL_OUT = -1 * MANUAL_OUT_MAX; }
   }
+  //Serial.println(CVT_POSITION);
+  //Serial.println(MANUAL_SET);
+  //Serial.println(MANUAL_OUT);
   
   // Calculate PULL (CVT Ratio Tracking) controller output
   // In this mode, the ENGINE_RPM is maximized by reducing the CVT_RATIO until the disengagement threshold is reached
@@ -271,10 +301,12 @@ void loop() {
   }
   else {
     if (MANUAL_OUT > 0) {
-      STEPPER->step(abs(int(MANUAL_OUT)), FORWARD, DOUBLE); 
+      if (ENCODER_PULSES < (STEPPER_MAX - MANUAL_OUT_MIN)) {
+        STEPPER->step(abs(MANUAL_OUT), FORWARD, DOUBLE);
+      }
     }
     else if (MANUAL_OUT < 0) {
-      STEPPER->step(abs(int(MANUAL_OUT)), BACKWARD, DOUBLE);
+      STEPPER->step(abs(MANUAL_OUT), BACKWARD, DOUBLE);
     }
   }
   
