@@ -151,7 +151,7 @@ class CMQ:
             event = ast.literal_eval(dump)
             if not self.checksum(event):  #! TODO: check sum here?
                 return self.generate_event('CMQ', 'error', '%s failed checksum' % dev.name)
-            pretty_print('CMQ', 'Read: %s' % str(event))
+            pretty_print('CMQ', 'Read from %s' % dev.name)
         except Exception as e:
             return self.generate_event('CMQ', 'error', 'No data from %s' % dev.name)
         
@@ -239,7 +239,6 @@ class CMQ:
             events = self.listen_all()
             for e in events: # Read newest 
                 try:
-                    pretty_print('CMQ', 'Sent: %s' % str(e))
                     dump = json.dumps(e)
                     self.zmq_client.send(dump)
                     time.sleep(self.timeout)
