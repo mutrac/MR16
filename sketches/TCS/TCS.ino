@@ -147,6 +147,10 @@ void setup() {
   
   // Serial
   Serial.begin(BAUD);
+  sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':{%s},'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
+  for (int i=0; i<20; i++) {
+    Serial.println(OUTPUT_BUFFER);
+  }
   
   // Analog Inputs
   pinMode(CVT_POSITION_PIN, INPUT);
