@@ -27,8 +27,8 @@ const char UID[] = "VDC";
 const char PULL[] = "pull";
 const char PUSH[] = "push";
 const int BAUD = 9600;
-const int DATA_SIZE = 128;
-const int OUTPUT_SIZE = 256;
+const int DATA_SIZE = 256;
+const int OUTPUT_SIZE = 512;
 
 // Analog Inputs
 const int STEERING_POSITION_PIN = A2;

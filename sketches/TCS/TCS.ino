@@ -1,11 +1,15 @@
 /*
   Traction Control Subsystem (TCS)
   McGill ASABE Engineering Team
-  
+  Author: Trevor Stanhope
   Board: Arduino DUE ATmega368
-  
-  Encoder
-  
+  Shield: Adafruit MotorShield (v2)
+  Stepper; HaydonKerk Size 34 87000 Series Encoder
+    1. Black (Encoder A)
+    2. Red (+3.3v)
+    3. Green (Encoder B)
+    4. Blue (Unused)
+    5. White (GND)
 */
 
 /* --- Libraries --- */
@@ -22,7 +26,6 @@ const char UID[] = "TCS";
 const char PULL[] = "pull";
 const char PUSH[] = "push";
 const char PULL_CMD = 'P';
-const char AUTO_CMD = 'A';
 const char MANUAL_CMD = 'M';
 const int BAUD = 9600;
 const int DATA_SIZE = 256;
@@ -41,22 +44,25 @@ const int CVT_POSITION_PIN = A0;
 const int CVT_POSITION_MIN = 1700; 
 const int CVT_POSITION_MAX = 2900; 
 
+/* --- Global Variables --- */
 // Stepper Motor Settings
 const int STEPPER_SPEED = 600;
-const int STEPPER_RESOLUTION = 48;
+const int STEPPER_RESOLUTION = 1000;
 const int STEPPER_TYPE = 2; // biploar
 const int STEPPER_DISENGAGE = 0; // the encoder reading when the stepper motor engages/disenchages the CVT
 const int STEPPER_MAX = 15000; // the encoder reading when the stepper is fully extended
 const int STEPPER_RESET_TIME = 1000; // time it takes to fully retract the STEPPER
 
-// Interrupt pulses/rev
-const int DRIVESHAFT_PULSES_PER_REV = 12;
-const int WHEEL_PULSES_PER_REV = 10;
-const int ENGINE_PULSES_PER_REV = 2;
+// Driveshaft rpm
+int DRIVESHAFT_PULSES_PER_REV = 12;
+
+// Wheel RPM
+int WHEEL_PULSES_PER_REV = 10;
 
 // Engine RPM
-const int ENGINE_RPM_MIN = 1550;
-const int ENGINE_RPM_MAX = 3600;
+int ENGINE_PULSES_PER_REV = 2;
+int ENGINE_RPM_MIN = 1550;
+int ENGINE_RPM_MAX = 3600;
 
 // CVT Settings
 const float CVT_RATIO_MAX = 4.13;
@@ -67,16 +73,15 @@ const float DIFF_RATIO_MAX = 3.0;
 const float DIFF_RATIO_MIN = 1.0;
 
 // Sample sets
-const int SPARKPLUG_SAMPLESIZE = 5;
-const int DRIVESHAFT_SAMPLESIZE = 5;
-const int WHEEL_SAMPLESIZE = 5;
+int SPARKPLUG_SAMPLESIZE = 5;
+int DRIVESHAFT_SAMPLESIZE = 5;
+int WHEEL_SAMPLESIZE = 5;
 
 // Float to char
-const int PRECISION = 2; // number of floating point decimal places
-const int DIGITS = 6; // number of floating point digits 
+int PRECISION = 2; // number of floating point decimal places
+int DIGITS = 6; // number of floating point digits 
 const int CHARS = 8;
 
-/* --- Global Variables --- */
 // Float strings
 char CVT_RATIO_S[CHARS];
 char DIFF_RATIO_S[CHARS];
@@ -91,21 +96,21 @@ float DIFF_RATIO = DIFF_RATIO_MIN;
 double MANUAL_P = 0.2;
 double MANUAL_I = 0;
 double MANUAL_D = 0;
+double MANUAL_OUT_MIN = 16;
+double MANUAL_OUT_MAX = 256;
 double MANUAL_SET;
 double MANUAL_IN;
 double MANUAL_OUT;
-double MANUAL_OUT_MIN = 50;
 
 // Pull mode PID
 double PULL_P = 1;
 double PULL_I = 0;
 double PULL_D = 0;
+double PULL_OUT_MIN = 8;
+double PULL_OUT_MAX = 1024;
 double PULL_SET;
 double PULL_IN;
 double PULL_OUT;
-double PULL_OUT_MIN = -100;
-double PULL_OUT_MAX = 100;
-PID PULL_PID(&PULL_IN, &PULL_OUT, &PULL_SET, PULL_P, PULL_I, PULL_D, DIRECT);
 
 // Initialize stepper motor
 Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
@@ -143,11 +148,6 @@ void setup() {
   pinMode(CVT_POSITION_PIN, INPUT);
   analogReadResolution(12);
   
-  // Initialid PULL MODE PID
-  PULL_PID.SetMode(AUTOMATIC);
-  PULL_PID.SetTunings(PULL_P, PULL_I, PULL_D);
-  PULL_PID.SetOutputLimits(PULL_OUT_MIN, PULL_OUT_MAX);
-  
   // Initilize asynch interrupts
   pinMode(ENCODER_A_PIN, INPUT);
   pinMode(ENCODER_B_PIN, INPUT);
@@ -160,7 +160,7 @@ void setup() {
   attachInterrupt(ENCODER_A_PIN, encoder_counter_A, CHANGE);
   attachInterrupt(ENCODER_B_PIN, encoder_counter_B, CHANGE);
 
-  // Initialize Stepper
+  // Reset Stepper
   AFMS.begin();  // create with the default frequency 1.6KHz
   STEPPER->setSpeed(STEPPER_SPEED); // the stepper speed in rpm
   int encoder_change = 200;
@@ -188,16 +188,16 @@ void loop() {
   delay(INTERVAL);
   
   // Drive Shaft RPM
-  DRIVESHAFT_HIST.add(DRIVESHAFT_PULSES / float(millis() - TIME));
-  DRIVESHAFT_RPM = 60 * DRIVESHAFT_HIST.getAverage() / DRIVESHAFT_PULSES_PER_REV;
+  DRIVESHAFT_HIST.add(DRIVESHAFT_PULSES);
+  DRIVESHAFT_RPM = 60 * DRIVESHAFT_HIST.getAverage() / (DRIVESHAFT_PULSES_PER_REV * (float(millis() - TIME)));
   
   // Engine RPM
-  ENGINE_HIST.add(SPARKPLUG_PULSES / float(millis() - TIME));
-  ENGINE_RPM = 60 * ENGINE_HIST.getAverage() / ENGINE_PULSES_PER_REV;
+  ENGINE_HIST.add(SPARKPLUG_PULSES);
+  ENGINE_RPM = 60 * ENGINE_HIST.getAverage() / (ENGINE_PULSES_PER_REV *  (float(millis() - TIME)));
   
   // Wheel RPM
-  WHEEL_HIST.add(WHEEL_PULSES / float(millis() - TIME));
-  WHEEL_RPM = 60 * WHEEL_HIST.getAverage() / WHEEL_PULSES_PER_REV;
+  WHEEL_HIST.add(WHEEL_PULSES);
+  WHEEL_RPM = 60 * WHEEL_HIST.getAverage() / (WHEEL_PULSES_PER_REV * (float(millis() - TIME)));
   
   // Determine the CVT Ratio
   // TODO: Should it handle disengaged CVT?
@@ -218,17 +218,26 @@ void loop() {
   // The ENCODER_PULSES is used as the INPUT to the PID object
   MANUAL_IN = double(ENCODER_PULSES);
   MANUAL_SET = double (map(CVT_POSITION, CVT_POSITION_MIN, CVT_POSITION_MAX, STEPPER_MAX, 0));
-  MANUAL_OUT = MANUAL_P * (MANUAL_SET - MANUAL_IN);
-  if (abs(MANUAL_OUT) < MANUAL_OUT_MIN) { MANUAL_OUT = 0;}
+  MANUAL_OUT = MANUAL_P * (MANUAL_SET - MANUAL_IN); // sum of PID
+  if (abs(MANUAL_OUT) < MANUAL_OUT_MIN) { MANUAL_OUT = 0;} // Limit small motions to keep stepper cool
+  else if (abs(MANUAL_OUT) > MANUAL_OUT_MAX) {
+    if (MANUAL_OUT > 0) { MANUAL_OUT = MANUAL_OUT_MAX; }
+    else if (MANUAL_OUT > 0) { MANUAL_OUT = MANUAL_OUT_MAX; }
+  }
   
   // Calculate PULL (CVT Ratio Tracking) controller output
   // In this mode, the ENGINE_RPM is maximized by reducing the CVT_RATIO until the disengagement threshold is reached
   // CVT_RATIO is used as the INPUT to the PID object
   PULL_IN = double(ENGINE_RPM);
   PULL_SET = double(ENGINE_RPM_MAX);
-  PULL_PID.Compute(); // ghost-writes to PULL_OUT
+  PULL_OUT = PULL_P * (PULL_SET - PULL_IN); // sum of PID
+  if (abs(PULL_OUT) < PULL_OUT_MIN) { PULL_OUT = 0; }
+  else if (abs(PULL_OUT) > PULL_OUT_MAX) {
+    if (PULL_OUT > 0) { PULL_OUT = PULL_OUT_MAX; }
+    else if (PULL_OUT < 0) { PULL_OUT = -1 * PULL_OUT_MAX; }
+  }
 
-  // Set CVT Mode
+  // Set CVT Mode from Serial commands
   if (Serial.available()) {
     char c = Serial.read();
     switch (c) {
