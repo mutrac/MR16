@@ -44,7 +44,7 @@ Controller Class
 This is a USB device which is part of a MIMO system
 """
 class Controller:
-    def __init__(self, uid, name, baud=9600, timeout=0.1, rules=[], port_attempts=3, read_attempts=5):
+    def __init__(self, uid, name, baud=9600, timeout=0.1, rules=[], port_attempts=3, read_attempts=10, write_timeout=0.5):
         self.name = name
         self.uid = uid # e.g. VDC
         self.baud = baud
@@ -56,10 +56,11 @@ class Controller:
         for i in range(port_attempts):
             try:
                 self.name = name + str(i) # e.g. /dev/ttyACM1
-                pretty_print('CMQ', 'attempting to attach %s on %s' % (self.uid, self.name))
-                self.port = serial.Serial(self.name, self.baud, timeout=self.timeout)
+                pretty_print('CMQ', 'Attempting to attach %s on %s' % (self.uid, self.name))
+                self.port = serial.Serial(self.name, self.baud, timeout=self.timeout, writeTimeout=write_timeout)
                 time.sleep(2)
                 for j in range(read_attempts):
+                    time.sleep(timeout)
                     string = self.port.readline()
                     if string is not (None or ''):
                         try:
@@ -124,7 +125,7 @@ class CMQ:
             
             # Attempt to locate controller
             c = Controller(uid, name, baud=baud, timeout=timeout, rules=rules)
-            pretty_print('CMQ', "adding %s on %s" % (c.uid, c.name))
+            pretty_print('CMQ', "Adding %s on %s" % (c.uid, c.name))
             self.controllers[uid] = c #TODO Save the controller obj if successful
             
         except Exception as error:
@@ -176,6 +177,8 @@ class CMQ:
             for [key,val] in r['conditions']:
                 if (data[key] == val): # TODO: might have to handle Unicode
                     try:
+                        pretty_print('CMQ', 'Flushing %s buffer' % str(target))
+                        target_dev.port.flushInput()
                         pretty_print('CMQ', 'Routing %s command to %s' % (str(cmd), str(target)))
                         target_dev.port.write(cmd)
                     except Exception as e:

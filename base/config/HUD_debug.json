@@ -231,8 +231,8 @@
             "format": "button: %s", 
             "bg_color": "#000000", 
             "fg_color": "#FFFFFF",
-            "y": 420, 
-            "x": 940, 
+            "y": 460, 
+            "x": 900, 
             "font_type": "Helvetica"
         },
        "throttle": {
@@ -241,8 +241,8 @@
             "format": "throttle: %s", 
             "bg_color": "#000000", 
             "fg_color": "#FFFFFF",
-            "y": 420, 
-            "x": 980, 
+            "y": 500, 
+            "x": 900, 
             "font_type": "Helvetica"
         },
         "trigger": {
@@ -251,18 +251,18 @@
             "format": "trigger: %s", 
             "bg_color": "#000000", 
             "fg_color": "#FFFFFF",
-            "y": 420, 
-            "x": 1020, 
+            "y": 540, 
+            "x": 900, 
             "font_type": "Helvetica"
         },
         "pull_mode": {
             "font_size": 24, 
             "initial_value": "", 
-            "format": "trigger: %s", 
+            "format": "pull_mode: %s", 
             "bg_color": "#000000", 
             "fg_color": "#FFFFFF",
-            "y": 420, 
-            "x": 1060, 
+            "y": 580, 
+            "x": 900, 
             "font_type": "Helvetica"
         }
     }

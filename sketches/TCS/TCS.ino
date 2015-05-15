@@ -76,8 +76,8 @@ const int DRIVESHAFT_SAMPLESIZE = 5;
 const int WHEEL_SAMPLESIZE = 5;
 
 // Float to char
-const int PRECISION = 2; // number of floating point decimal places
-const int DIGITS = 6; // number of floating point digits 
+const int PRECISION = 1; // number of floating point decimal places
+const int DIGITS = 3; // number of floating point digits 
 const int CHARS = 8;
 
 /* --- Global Variables --- */
@@ -165,7 +165,6 @@ void setup() {
   attachInterrupt(ENCODER_B_PIN, encoder_counter_B, CHANGE);
 
   // Reset Stepper
-  Serial.println("Resetting stepper");
   AFMS.begin();  // create with the default frequency 1.6KHz
   STEPPER->setSpeed(STEPPER_SPEED); // the stepper speed in rpm
   int encoder_1;
@@ -180,7 +179,6 @@ void setup() {
     encoder_change = abs(encoder_1 - encoder_2);
   }
   ENCODER_PULSES = 0; // reset the ENCODER to zero
-  Serial.println("Encoder zero'd");
   
   // Extend to Max
   encoder_change = 100;
@@ -191,7 +189,6 @@ void setup() {
     encoder_change = abs(encoder_1 - encoder_2);
   }
   STEPPER_MAX = ENCODER_PULSES;
-  Serial.println("Encoder max'd");
   
   // Retract to Min
   encoder_change = 100;
@@ -202,7 +199,6 @@ void setup() {
     encoder_change = abs(encoder_1 - encoder_2);
   }
   ENCODER_PULSES = 0; // reset the ENCODER to zero
-  Serial.println("Encoder zero'd");
 }
 
 /* --- Loop --- */
@@ -311,9 +307,10 @@ void loop() {
   }
   
   // Output string buffer
-  sprintf(DATA_BUFFER, "{'driveshaft_rpm':%d,'wheel_rpm':%d,'engine_rpm':%d,'cvt_ratio':%s,'diff_ratio:%s,'cvt_mode':%d,'cvt_enc':%d,'cvt_pos':%d}", DRIVESHAFT_RPM, WHEEL_RPM,  ENGINE_RPM, CVT_RATIO_S, DIFF_RATIO_S, CVT_MODE, ENCODER_PULSES,CVT_POSITION);
-  sprintf(OUTPUT_BUFFER, "{'uid':'%s',data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
+  sprintf(DATA_BUFFER, "{'driveshaft_rpm':%d,'wheel_rpm':%d,'engine_rpm':%d,'cvt_ratio':%s,'diff_ratio':%s,'cvt_mode':%d,'cvt_enc':%d,'cvt_pos':%d}", DRIVESHAFT_RPM, WHEEL_RPM,  ENGINE_RPM, CVT_RATIO_S, DIFF_RATIO_S, CVT_MODE, ENCODER_PULSES,CVT_POSITION);
+  sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
+  Serial.flush();
 }
 
 /* --- SYNCHRONOUS TASKS --- */

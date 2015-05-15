@@ -182,6 +182,7 @@ void loop() {
   // Format output to USB host by the following structure: {uid, data, chksum}
   sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
+  Serial.flush();
  
 }
 
