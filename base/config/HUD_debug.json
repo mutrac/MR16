@@ -113,12 +113,21 @@
             "x": 600, 
             "font_type": "Helvetica"
         },
+        "diff_ratio": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "diff_ratio: %s", 
+            "bg_color": "#FFFFFF", 
+            "y": 180, 
+            "x": 600, 
+            "font_type": "Helvetica"
+        },
         "pull_mode": {
             "font_size": 24, 
             "initial_value": "", 
             "format": "pull_mode: %s", 
             "bg_color": "#FFFFFF", 
-            "y": 180, 
+            "y": 220, 
             "x": 600, 
             "font_type": "Helvetica"
         },
