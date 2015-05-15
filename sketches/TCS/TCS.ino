@@ -3,6 +3,9 @@
   McGill ASABE Engineering Team
   
   Board: Arduino DUE ATmega368
+  
+  Encoder
+  
 */
 
 /* --- Libraries --- */
@@ -22,8 +25,8 @@ const char PULL_CMD = 'P';
 const char AUTO_CMD = 'A';
 const char MANUAL_CMD = 'M';
 const int BAUD = 9600;
-const int DATA_SIZE = 128;
-const int OUTPUT_SIZE = 256;
+const int DATA_SIZE = 256;
+const int OUTPUT_SIZE = 512;
 const int INTERVAL = 500; // millisecond wait
 
 // Digital Inputs (some are Interrupts)
@@ -35,18 +38,16 @@ const int ENCODER_B_PIN = 30;
 
 // Analog Input
 const int CVT_POSITION_PIN = A0;
-const int CVT_POSITION_MIN = 512; 
-const int CVT_POSITION_MAX = 1024; 
+const int CVT_POSITION_MIN = 1700; 
+const int CVT_POSITION_MAX = 2900; 
 
 // Stepper Motor Settings
 const int STEPPER_SPEED = 600;
 const int STEPPER_RESOLUTION = 48;
 const int STEPPER_TYPE = 2; // biploar
 const int STEPPER_DISENGAGE = 0; // the encoder reading when the stepper motor engages/disenchages the CVT
-const int STEPPER_MAX = 1024; // the encoder reading when the stepper is fully extended
+const int STEPPER_MAX = 15000; // the encoder reading when the stepper is fully extended
 const int STEPPER_RESET_TIME = 1000; // time it takes to fully retract the STEPPER
-const int STEPPER_OUT_MIN = -100;
-const int STEPPER_OUT_MAX = 100;
 
 // Interrupt pulses/rev
 const int DRIVESHAFT_PULSES_PER_REV = 12;
@@ -87,15 +88,13 @@ float CVT_RATIO = CVT_RATIO_MIN;
 float DIFF_RATIO = DIFF_RATIO_MIN;
 
 // Manual mode PID
-double MANUAL_P = 1;
+double MANUAL_P = 0.2;
 double MANUAL_I = 0;
 double MANUAL_D = 0;
 double MANUAL_SET;
 double MANUAL_IN;
 double MANUAL_OUT;
-double MANUAL_OUT_MIN = -100;
-double MANUAL_OUT_MAX = 100;
-PID MANUAL_PID(&MANUAL_IN, &MANUAL_OUT, &MANUAL_SET, MANUAL_P, MANUAL_I, MANUAL_D, DIRECT);
+double MANUAL_OUT_MIN = 50;
 
 // Pull mode PID
 double PULL_P = 1;
@@ -142,11 +141,7 @@ void setup() {
   
   // Analog Inputs
   pinMode(CVT_POSITION_PIN, INPUT);
- 
-   // Initialid MANUAL MODE PID
-  MANUAL_PID.SetMode(AUTOMATIC);
-  MANUAL_PID.SetTunings(MANUAL_P, MANUAL_I, MANUAL_D);
-  MANUAL_PID.SetOutputLimits(MANUAL_OUT_MIN, MANUAL_OUT_MAX);
+  analogReadResolution(12);
   
   // Initialid PULL MODE PID
   PULL_PID.SetMode(AUTOMATIC);
@@ -154,16 +149,29 @@ void setup() {
   PULL_PID.SetOutputLimits(PULL_OUT_MIN, PULL_OUT_MAX);
   
   // Initilize asynch interrupts
+  pinMode(ENCODER_A_PIN, INPUT);
+  pinMode(ENCODER_B_PIN, INPUT);
+  pinMode(WHEEL_PIN, INPUT);
+  pinMode(DRIVESHAFT_PIN, INPUT);
+  pinMode(SPARKPLUG_PIN, INPUT);
   attachInterrupt(SPARKPLUG_PIN, sparkplug_counter, RISING);
-  attachInterrupt(DRIVESHAFT_PIN, driveshaft_counter, LOW);
-  attachInterrupt(WHEEL_PIN, wheel_counter, LOW);
-  attachInterrupt(ENCODER_A_PIN, encoder_counter, CHANGE);
-  
+  attachInterrupt(DRIVESHAFT_PIN, driveshaft_counter, CHANGE);
+  attachInterrupt(WHEEL_PIN, wheel_counter, CHANGE);
+  attachInterrupt(ENCODER_A_PIN, encoder_counter_A, CHANGE);
+  attachInterrupt(ENCODER_B_PIN, encoder_counter_B, CHANGE);
+
   // Initialize Stepper
   AFMS.begin();  // create with the default frequency 1.6KHz
   STEPPER->setSpeed(STEPPER_SPEED); // the stepper speed in rpm
-  STEPPER->step(STEPPER_MAX, BACKWARD, DOUBLE); // fully retract the STEPPER
-  delay(STEPPER_RESET_TIME);
+  int encoder_change = 200;
+  int encoder_1;
+  int encoder_2;
+  while (encoder_change > 5) {
+    encoder_1 = ENCODER_PULSES;
+    STEPPER->step(100, BACKWARD, DOUBLE); // fully retract the STEPPER
+    encoder_2 = ENCODER_PULSES;
+    encoder_change = abs(encoder_1 - encoder_2);
+  }
   ENCODER_PULSES = 0; // reset the ENCODER to zero
 }
 
@@ -209,8 +217,9 @@ void loop() {
   // The CVT_POSITION (in ENCODER_PULSE units) is used as the SETPOINT to the PID object
   // The ENCODER_PULSES is used as the INPUT to the PID object
   MANUAL_IN = double(ENCODER_PULSES);
-  MANUAL_SET = double (map(CVT_POSITION, CVT_POSITION_MIN, CVT_POSITION_MAX, 0, STEPPER_MAX));
-  MANUAL_PID.Compute();
+  MANUAL_SET = double (map(CVT_POSITION, CVT_POSITION_MIN, CVT_POSITION_MAX, STEPPER_MAX, 0));
+  MANUAL_OUT = MANUAL_P * (MANUAL_SET - MANUAL_IN);
+  if (abs(MANUAL_OUT) < MANUAL_OUT_MIN) { MANUAL_OUT = 0;}
   
   // Calculate PULL (CVT Ratio Tracking) controller output
   // In this mode, the ENGINE_RPM is maximized by reducing the CVT_RATIO until the disengagement threshold is reached
@@ -218,7 +227,7 @@ void loop() {
   PULL_IN = double(ENGINE_RPM);
   PULL_SET = double(ENGINE_RPM_MAX);
   PULL_PID.Compute(); // ghost-writes to PULL_OUT
-   
+
   // Set CVT Mode
   if (Serial.available()) {
     char c = Serial.read();
@@ -245,13 +254,13 @@ void loop() {
     if (MANUAL_OUT > 0) {
       STEPPER->step(abs(int(MANUAL_OUT)), FORWARD, DOUBLE); 
     }
-    else if (MANUAL_IN < 0) {
+    else if (MANUAL_OUT < 0) {
       STEPPER->step(abs(int(MANUAL_OUT)), BACKWARD, DOUBLE);
     }
   }
   
   // Output string buffer
-  sprintf(DATA_BUFFER, "{'driveshaft_rpm':%d,'wheel_rpm':%d,'engine_rpm':%d,'cvt_ratio':%s,'diff_ratio:%s,'cvt_mode':%d,'cvt_enc':%d}", DRIVESHAFT_RPM, WHEEL_RPM,  ENGINE_RPM, CVT_RATIO_S, DIFF_RATIO_S, CVT_MODE, ENCODER_PULSES);
+  sprintf(DATA_BUFFER, "{'driveshaft_rpm':%d,'wheel_rpm':%d,'engine_rpm':%d,'cvt_ratio':%s,'diff_ratio:%s,'cvt_mode':%d,'cvt_enc':%d,'cvt_pos':%d}", DRIVESHAFT_RPM, WHEEL_RPM,  ENGINE_RPM, CVT_RATIO_S, DIFF_RATIO_S, CVT_MODE, ENCODER_PULSES,CVT_POSITION);
   sprintf(OUTPUT_BUFFER, "{'uid':'%s',data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
 }
@@ -288,11 +297,46 @@ void wheel_counter(void) {
   WHEEL_PULSES++;
 }
 
-void encoder_counter(void) {
-  if (digitalRead(ENCODER_A_PIN) == digitalRead(ENCODER_B_PIN)) {
-    ENCODER_PULSES++;
+void encoder_counter_A(void) {
+  if (digitalRead(ENCODER_A_PIN) == HIGH) { 
+      if (digitalRead(ENCODER_B_PIN) == LOW) {  
+        ENCODER_PULSES = ENCODER_PULSES + 1;         // CW
+      } 
+      else {
+        ENCODER_PULSES = ENCODER_PULSES - 1;         // CCW
+      }
+    }
+    else   // must be a high-to-low edge on channel A                                       
+    { 
+      // check channel B to see which way encoder is turning  
+      if (digitalRead(ENCODER_B_PIN) == HIGH) {   
+        ENCODER_PULSES = ENCODER_PULSES + 1;          // CW
+      } 
+      else {
+        ENCODER_PULSES = ENCODER_PULSES - 1;          // CCW
+      }
+    }
+}
+
+// look for a low-to-high on channel B
+void encoder_counter_B(void) {
+  if (digitalRead(ENCODER_B_PIN) == HIGH) {   
+   // check channel A to see which way encoder is turning
+    if (digitalRead(ENCODER_A_PIN) == HIGH) {  
+      ENCODER_PULSES = ENCODER_PULSES + 1;         // CW
+    } 
+    else {
+      ENCODER_PULSES = ENCODER_PULSES - 1;         // CCW
+    }
   }
-  else {
-    ENCODER_PULSES--;
+  // Look for a high-to-low on channel B
+  else { 
+    // check channel B to see which way encoder is turning  
+    if (digitalRead(ENCODER_A_PIN) == LOW) {   
+      ENCODER_PULSES = ENCODER_PULSES + 1;          // CW
+    } 
+    else {
+      ENCODER_PULSES = ENCODER_PULSES - 1;          // CCW
+    }
   }
 }

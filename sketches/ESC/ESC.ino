@@ -10,7 +10,6 @@
 #include "DualVNH5019MotorShield.h"
 #include "DallasTemperature.h"
 #include "OneWire.h"
-#include <PID_v1.h>
 #include <RunningMedian.h>
 
 /* --- Global Constants --- */
@@ -20,12 +19,12 @@
 const int LPH_SENSOR_PIN = 18;  // interrupt (#5) required
 
 // Failsafe Digital Input
-const int BUTTON_KILL_PIN = 22;
-const int HITCH_KILL_PIN = 24;
-const int SEAT_KILL_PIN = 26;
-const int SEAT_KILL_POUT = 28;
+const int BUTTON_KILL_POUT = 28;
 const int HITCH_KILL_POUT = 30;
-const int BUTTON_KILL_POUT = 32;
+const int SEAT_KILL_POUT = 32;
+const int SEAT_KILL_PIN = 26;
+const int HITCH_KILL_PIN = 24;
+const int BUTTON_KILL_PIN = 22;
 
 // Joystick (Digital) 
 const int IGNITION_PIN = 23;
@@ -80,6 +79,7 @@ const int RFID_READ = 0x02;
 /// Time Delays
 const int KILL_WAIT = 1000;
 const int IGNITION_WAIT = 500;
+const int MOTORS_WAIT = 100;
 const int STANDBY_WAIT = 10;
 const int REBOOT_WAIT = 1000;
 
@@ -103,6 +103,9 @@ const int THROTTLE_STEP = 64;
 /// CVT Guard
 const int CVT_GUARD_THRESHOLD = 600;
 
+// Seat
+const int SEAT_LIMIT = 10;
+
 // Engine sensors
 const int LPH_SAMPLESIZE = 20;
 const int PSI_SAMPLESIZE = 5;
@@ -112,6 +115,7 @@ const int PRECISION = 2;
 
 /* --- GLOBAL VARIABLES --- */
 /// Safety switches, rfid, and Joystick button variables
+int SEAT_COUNTER = 0;
 int SEAT_KILL = 0;
 int HITCH_KILL = 0;
 int TRIGGER_KILL = 0;
@@ -246,10 +250,14 @@ void setup() {
 /* --- LOOP --- */
 void loop() {
 
-  // Check switches
-  SEAT_KILL = check_switch(SEAT_KILL_PIN);
-  HITCH_KILL = check_switch(HITCH_KILL_PIN);
-  BUTTON_KILL = check_switch(BUTTON_KILL_PIN);
+  // Check Failsafe Switches (Default to 1 if disconnected)
+  HITCH_KILL = check_failsafe_switch(HITCH_KILL_PIN);
+  BUTTON_KILL = check_failsafe_switch(BUTTON_KILL_PIN);
+  
+  // Check Seat
+  SEAT_KILL = check_seat();
+
+  // Check Regular Switches (Default to 0 if disconnected)
   TRIGGER_KILL = check_switch(TRIGGER_KILL_PIN);
   IGNITION = check_switch(IGNITION_PIN);
   DISPLAY_MODE = check_switch(DISPLAY_MODE_PIN);
@@ -263,7 +271,7 @@ void loop() {
 
   // Check non-switches
   CVT_GUARD = check_guard();
-  if (!RFID_AUTH) {
+  if (RFID_AUTH == 0) {
     RFID_AUTH = check_rfid();
   }
   LEFT_BRAKE = check_brake(LEFT_BRAKE_PIN);
@@ -298,7 +306,7 @@ void loop() {
       THROTTLE = THROTTLE_MIN;
     }
   }
-  if (!TRIGGER_KILL) {
+  if (TRIGGER_KILL) {
     set_throttle(THROTTLE);
   }
   else {
@@ -307,7 +315,7 @@ void loop() {
   
   // (0) If OFF
   if (RUN_MODE == 0) {
-    if (RFID_AUTH) {
+    if (RFID_AUTH != 0 && !SEAT_KILL) {
       standby();
     }
   }
@@ -316,7 +324,7 @@ void loop() {
     if (SEAT_KILL || HITCH_KILL || BUTTON_KILL) {
       kill(); // kill engine
     }
-    else if (IGNITION && !LEFT_BRAKE && !RIGHT_BRAKE && !CVT_GUARD) {
+    else if (IGNITION && LEFT_BRAKE && RIGHT_BRAKE && !CVT_GUARD) {
       ignition(); // execute ignition sequence
     }
     else {
@@ -342,7 +350,7 @@ void loop() {
   dtostrf(LPH, DIGITS, PRECISION, LPH_BUF);
   dtostrf(TEMP, DIGITS, PRECISION, TEMP_BUF);
   dtostrf(PSI, DIGITS, PRECISION, PSI_BUF);
-  sprintf(DATA_BUFFER, "{'run_mode':%d,'display_mode':%d,'right_brake':%d,'left_brake':%d,'cvt_guard':%d,'seat':%d,'hitch':%d,'ignition':%d,'rfid':'%d','cart_mode':%d,'cart_fwd':%d,'cart_bwd':%d','throttle':%d}", RUN_MODE, DISPLAY_MODE, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, SEAT_KILL, HITCH_KILL, IGNITION, RFID_AUTH, CART_MODE, CART_FORWARD, CART_BACKWARD, THROTTLE);
+  sprintf(DATA_BUFFER, "{'run_mode':%d,'display_mode':%d,'right_brake':%d,'left_brake':%d,'cvt_guard':%d,'button':%d,'seat':%d,'hitch':%d,'ignition':%d,'rfid':'%d','cart_mode':%d,'cart_fwd':%d,'cart_bwd':%d','throttle':%d,'trigger':%d}", RUN_MODE, DISPLAY_MODE, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, BUTTON_KILL, SEAT_KILL, HITCH_KILL, IGNITION, RFID_AUTH, CART_MODE, CART_FORWARD, CART_BACKWARD, THROTTLE, TRIGGER_KILL);
   sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
   Serial.flush();
@@ -409,6 +417,21 @@ int check_switch(int pin_num) {
   }
 }
 
+/// Check Switch
+int check_failsafe_switch(int pin_num) {
+  if  (digitalRead(pin_num)) {
+    if (digitalRead(pin_num)) {
+      return 0;
+    }
+    else {
+      return 1;
+    }
+  }
+  else {
+    return 1;
+  }
+}
+
 /// Check RFID
 int check_rfid(void) {
   Serial3.write(RFID_READ);
@@ -447,6 +470,23 @@ int check_guard(void) {
     }
 }
 
+/// Check Seat
+// Returns 1 if seat is empty, checks for SEAT_LIMIT iterations before activating
+int check_seat(void) {
+  if (digitalRead(SEAT_KILL_PIN)) {
+    SEAT_COUNTER++;
+  } 
+  else {
+    SEAT_COUNTER = 0;
+  }
+  if (SEAT_COUNTER >= SEAT_LIMIT) {
+    return 1;
+  }
+  else {
+    return 0;
+  }
+}
+
 /// Reboot the Atom
 void reboot(void) {
   digitalWrite(REBOOT_RELAY_PIN, LOW);
@@ -456,9 +496,10 @@ void reboot(void) {
 
 /// Kill
 void kill(void) {
+  delay(KILL_WAIT);
   digitalWrite(STOP_RELAY_PIN, HIGH);
-  digitalWrite(STARTER_RELAY_PIN, HIGH);
-  digitalWrite(REGULATOR_RELAY_PIN, HIGH);
+  //digitalWrite(REGULATOR_RELAY_PIN, HIGH);
+  //digitalWrite(STARTER_RELAY_PIN, HIGH);
   delay(KILL_WAIT);
   RUN_MODE = 0;
 }
@@ -476,6 +517,7 @@ void standby(void) {
 void ignition(void) {
   ESC.setM1Speed(0);
   ESC.setM2Speed(0);
+  delay(MOTORS_WAIT);
   while (check_switch(IGNITION_PIN)) {
     digitalWrite(STOP_RELAY_PIN, LOW);
     digitalWrite(REGULATOR_RELAY_PIN, LOW);
