@@ -43,7 +43,7 @@
                 ],
                 "description" : "Automatic mode engaged",
                 "target" : "VDC",
-                "command" : "M"
+                "command" : "A"
             },
             {   
                 "conditions" : [

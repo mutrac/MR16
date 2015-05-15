@@ -47,7 +47,7 @@ const int STEPPER_SPEED = 500;
 const int STEPPER_RESOLUTION = 1000;
 const int STEPPER_TYPE = 2; // biploar
 const int STEPPER_DISENGAGE = 0; // the encoder reading when the stepper motor engages/disenchages the CVT
-int STEPPER_MAX = 10500; // the encoder reading when the stepper is fully extended
+const int STEPPER_MAX = 10500; // the encoder reading when the stepper is fully extended
 const int STEPPER_RESET_TIME = 1000; // time it takes to fully retract the STEPPER
 const int STEPPER_WAIT = 1000; // reset wait time
 
@@ -176,26 +176,6 @@ void setup() {
   int encoder_change = 100;
   
   // Retract to Min
-  while (encoder_change > 16) {
-    encoder_1 = ENCODER_PULSES;
-    STEPPER->step(32, BACKWARD, DOUBLE); // fully retract the STEPPER
-    encoder_2 = ENCODER_PULSES;
-    encoder_change = abs(encoder_1 - encoder_2);
-  }
-  ENCODER_PULSES = 0; // reset the ENCODER to zero
-  
-  // Extend to Max
-  encoder_change = 100;
-  while (encoder_change > 16) {
-    encoder_1 = ENCODER_PULSES;
-    STEPPER->step(32, FORWARD, DOUBLE); // fully retract the STEPPER
-    encoder_2 = ENCODER_PULSES;
-    encoder_change = abs(encoder_1 - encoder_2);
-  }
-  STEPPER_MAX = ENCODER_PULSES;
-  
-  // Retract to Min
-  encoder_change = 100;
   while (encoder_change > 16) {
     encoder_1 = ENCODER_PULSES;
     STEPPER->step(32, BACKWARD, DOUBLE); // fully retract the STEPPER
