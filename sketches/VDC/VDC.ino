@@ -58,6 +58,7 @@ const int STEERING_D_GAIN = 0;
 const int STEERING_THRESHOLD = 75;
 const int STEERING_OUTPUT_LEFT = -400;
 const int STEERING_OUTPUT_RIGHT = 400;
+const int STEERING_SAMPLES = 5;
 
 /* --- GLOBAL VARIABLES --- */
 // Create sensor values
@@ -68,7 +69,6 @@ int SUSP_POS = 0;
 int CART_FORWARD = 0;
 int CART_BACKWARD = 0;
 int STEERING_OUTPUT = 0;
-int STEERING_SAMPLES = 5;
 int BALLAST_OUTPUT = 0;
 
 // Create character buffers
@@ -104,6 +104,8 @@ void loop() {
   int I = STEERING_I_GAIN * STEERING_ERROR.getAverage();
   int D = STEERING_D_GAIN * (STEERING_ERROR.getHighest() - STEERING_ERROR.getLowest());
   STEERING_OUTPUT = P + I + D;
+  if (STEERING_OUTPUT < STEERING_OUTPUT_LEFT ) { STEERING_OUTPUT = STEERING_OUTPUT_LEFT; }
+  if (STEERING_OUTPUT > STEERING_OUTPUT_RIGHT ) { STEERING_OUTPUT = STEERING_OUTPUT_RIGHT; }
   
   // M1 - Set steering actuator power output
   if (VDC.getM1CurrentMilliamps() < STEERING_MILLIAMP_LIMIT) {
@@ -168,18 +170,20 @@ void loop() {
       VDC.setM2Speed(0);
     }
   }
+  
+  // Reset values (VERY IMPORTANT or else cart would get stuck on/off)
+  CART_FORWARD = 0;
+  CART_BACKWARD = 0;
+  
   /* --- END Ballast Subsystem--- */
 
   // Format data buffer
   sprintf(DATA_BUFFER, "{'str':%d,'act':%d,'cart_mode':%d,'cart_fwd':%d,'cart_bwd':%d,'susp':%d}", STR_POS, ACT_POS, CART_MODE, CART_FORWARD, CART_BACKWARD, SUSP_POS);
-  
+
   // Format output to USB host by the following structure: {uid, data, chksum}
   sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
  
-  // Reset values (VERY IMPORTANT or else cart would get stuck on/off)
-  CART_FORWARD = 0;
-  CART_BACKWARD = 0;
 }
 
 /* --- SYNCHRONOUS TASKS --- */
