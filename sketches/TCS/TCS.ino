@@ -30,7 +30,7 @@ const char MANUAL_CMD = 'M';
 const int BAUD = 9600;
 const int DATA_SIZE = 256;
 const int OUTPUT_SIZE = 512;
-const int INTERVAL = 500; // millisecond wait
+const int INTERVAL = 500; // millisecond waits
 
 // Digital Inputs (some are Interrupts)
 const int DRIVESHAFT_PIN = 22;
@@ -41,10 +41,7 @@ const int ENCODER_B_PIN = 30;
 
 // Analog Input
 const int CVT_POSITION_PIN = A0;
-const int CVT_POSITION_MIN = 1700; 
-const int CVT_POSITION_MAX = 2900; 
 
-/* --- Global Variables --- */
 // Stepper Motor Settings
 const int STEPPER_SPEED = 600;
 const int STEPPER_RESOLUTION = 1000;
@@ -52,17 +49,18 @@ const int STEPPER_TYPE = 2; // biploar
 const int STEPPER_DISENGAGE = 0; // the encoder reading when the stepper motor engages/disenchages the CVT
 const int STEPPER_MAX = 15000; // the encoder reading when the stepper is fully extended
 const int STEPPER_RESET_TIME = 1000; // time it takes to fully retract the STEPPER
+const int STEPPER_WAIT = 1000; // reset wait time
 
 // Driveshaft rpm
-int DRIVESHAFT_PULSES_PER_REV = 12;
+const int DRIVESHAFT_PULSES_PER_REV = 12;
 
 // Wheel RPM
-int WHEEL_PULSES_PER_REV = 10;
+const int WHEEL_PULSES_PER_REV = 10;
 
 // Engine RPM
-int ENGINE_PULSES_PER_REV = 2;
-int ENGINE_RPM_MIN = 1550;
-int ENGINE_RPM_MAX = 3600;
+const int ENGINE_PULSES_PER_REV = 2;
+const int ENGINE_RPM_MIN = 1550;
+const int ENGINE_RPM_MAX = 3600;
 
 // CVT Settings
 const float CVT_RATIO_MAX = 4.13;
@@ -73,21 +71,26 @@ const float DIFF_RATIO_MAX = 3.0;
 const float DIFF_RATIO_MIN = 1.0;
 
 // Sample sets
-int SPARKPLUG_SAMPLESIZE = 5;
-int DRIVESHAFT_SAMPLESIZE = 5;
-int WHEEL_SAMPLESIZE = 5;
+const int SPARKPLUG_SAMPLESIZE = 5;
+const int DRIVESHAFT_SAMPLESIZE = 5;
+const int WHEEL_SAMPLESIZE = 5;
 
 // Float to char
-int PRECISION = 2; // number of floating point decimal places
-int DIGITS = 6; // number of floating point digits 
+const int PRECISION = 2; // number of floating point decimal places
+const int DIGITS = 6; // number of floating point digits 
 const int CHARS = 8;
+
+/* --- Global Variables --- */
+// Calibratable CVT Joystick potentiometer
+int CVT_POSITION_MIN = 1700; 
+int CVT_POSITION_MAX = 2900; 
 
 // Float strings
 char CVT_RATIO_S[CHARS];
 char DIFF_RATIO_S[CHARS];
 
 // Mode variables
-boolean CVT_MODE = 0;
+int CVT_MODE = 0;
 int CVT_POSITION = 0;
 float CVT_RATIO = CVT_RATIO_MIN;
 float DIFF_RATIO = DIFF_RATIO_MIN;
@@ -116,12 +119,13 @@ double PULL_OUT;
 Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
 Adafruit_StepperMotor *STEPPER = AFMS.getStepper(STEPPER_RESOLUTION, STEPPER_TYPE);
 
-// Counters
+// RPM Counters
 volatile int SPARKPLUG_PULSES = 0;
 volatile int DRIVESHAFT_PULSES = 0;
 volatile int WHEEL_PULSES = 0;
 volatile int ENCODER_PULSES = 0;
 
+// RPM sensor results
 int ENGINE_RPM = 0;
 int DRIVESHAFT_RPM = 0;
 int WHEEL_RPM = 0;
@@ -208,8 +212,14 @@ void loop() {
   DIFF_RATIO = DRIVESHAFT_RPM / WHEEL_RPM;
   dtostrf(DIFF_RATIO, DIGITS, PRECISION, DIFF_RATIO_S);
     
-  // Read the position of the joystick
+  // Read the position of the joystick and auto-calibrate
   CVT_POSITION = analogRead(CVT_POSITION_PIN);
+  if (CVT_POSITION < CVT_POSITION_MIN ) {
+    CVT_POSITION_MIN = CVT_POSITION;
+  } // auto calibrate minima
+  else if (CVT_POSITION > CVT_POSITION_MAX ) {
+    CVT_POSITION_MAX = CVT_POSITION;
+  } // auto calibrate maxima
   
   // Calculate MANUAL controller output
   // In this mode, the encoder to tracks the joystick position
