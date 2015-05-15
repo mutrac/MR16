@@ -44,7 +44,7 @@ Controller Class
 This is a USB device which is part of a MIMO system
 """
 class Controller:
-    def __init__(self, uid, name, baud=9600, timeout=0.1, rules=[], port_attempts=3, read_attempts=10, write_timeout=0.5):
+    def __init__(self, uid, name, baud=9600, timeout=0.1, rules=[], port_attempts=3, read_attempts=20, write_timeout=0.5):
         self.name = name
         self.uid = uid # e.g. VDC
         self.baud = baud
@@ -64,7 +64,6 @@ class Controller:
                     string = self.port.readline()
                     if string is not (None or ''):
                         try:
-                            print string
                             data = ast.literal_eval(string)
                             pretty_print('CMQ', 'Read OK from %s' % data['uid'])
                             if data['uid'] == self.uid:
