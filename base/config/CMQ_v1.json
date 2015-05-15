@@ -44,7 +44,7 @@
                 "description" : "Automatic mode engaged",
                 "target" : "VDC",
                 "command" : "M"
-            }
+            },
             {   
                 "conditions" : [
                     ["cart_mode", 0]

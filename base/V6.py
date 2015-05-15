@@ -362,6 +362,7 @@ class V6:
             except Exception as e:
                 raise e
             except KeyboardInterrupt as e:
+                self.close()
                 break
                 
     """
@@ -408,12 +409,14 @@ class V6:
                         pass
                 except Exception as err:
                     pretty_print('CV6', str(err))
+                except KeyboardInterrupt as err:
+                    raise KeyboardInterrupt
             except KeyboardInterrupt:
-                break
+                raise KeyboardInterrupt
 
 if __name__ == '__main__':
     try:
         ext = V6(capture=0)
         ext.run_async(dt=1/25.0)
-    except KeyboardInterrupt:
+    except Exception:
         ext.close()

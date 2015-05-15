@@ -205,7 +205,7 @@
             "x": 900, 
             "font_type": "Helvetica"
         },
-                "cart_fwd": {
+        "cart_fwd": {
             "font_size": 24, 
             "initial_value": "", 
             "format": "cart_fwd: %s", 
@@ -223,6 +223,46 @@
             "fg_color": "#FFFFFF",
             "y": 420, 
             "x": 900, 
+            "font_type": "Helvetica"
+        },
+       "button": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "button: %s", 
+            "bg_color": "#000000", 
+            "fg_color": "#FFFFFF",
+            "y": 420, 
+            "x": 940, 
+            "font_type": "Helvetica"
+        },
+       "throttle": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "throttle: %s", 
+            "bg_color": "#000000", 
+            "fg_color": "#FFFFFF",
+            "y": 420, 
+            "x": 980, 
+            "font_type": "Helvetica"
+        },
+        "trigger": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "trigger: %s", 
+            "bg_color": "#000000", 
+            "fg_color": "#FFFFFF",
+            "y": 420, 
+            "x": 1020, 
+            "font_type": "Helvetica"
+        },
+        "pull_mode": {
+            "font_size": 24, 
+            "initial_value": "", 
+            "format": "trigger: %s", 
+            "bg_color": "#000000", 
+            "fg_color": "#FFFFFF",
+            "y": 420, 
+            "x": 1060, 
             "font_type": "Helvetica"
         }
     }
