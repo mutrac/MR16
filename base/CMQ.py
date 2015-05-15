@@ -144,7 +144,7 @@ class CMQ:
     def listen(self, dev):
     
         ## Read and parse
-        pretty_print('CMQ', 'Listening for %s' % dev.name)
+        pretty_print('CMQ', 'Listening for %s (%s)' % (dev.uid, dev.name))
         try:
             dump = dev.port.readline()
             event = ast.literal_eval(dump)
@@ -152,7 +152,7 @@ class CMQ:
                 return self.generate_event('CMQ', 'error', '%s failed checksum' % dev.name)
             pretty_print('CMQ', 'Read from %s' % dev.name)
         except Exception as e:
-            return self.generate_event('CMQ', 'error', 'No data from %s (%s)' % (dev.uid, dev.name))
+            return self.generate_event('CMQ', 'error', 'NO DATA from %s (%s)' % (dev.uid, dev.name))
         
         ## Follow rule-base
         data = event['data']
@@ -246,7 +246,7 @@ class CMQ:
                         if socks.get(self.zmq_client) == zmq.POLLIN:
                             dump = self.zmq_client.recv(zmq.NOBLOCK) # zmq.NOBLOCK
                             response = json.loads(dump)
-                            pretty_print('CMQ', 'Received: %s' % str(response))
+                            pretty_print('CMQ', 'Received response from OBD')
                             #! TODO handle any fancy push/pull responses from the host
                             """
                             CURRENTLY THIS SECTION DOES NOTHING
