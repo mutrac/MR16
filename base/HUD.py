@@ -58,7 +58,8 @@ class SafeMode:
             self.master,
             textvariable=self.labels[name],
             font=(settings['font_type'], settings['font_size']),
-            bg=settings['bg_color']
+            bg=settings['bg_color'],
+            fg=settings["fg_color"]
         )
         label.pack()
         label.place(x=settings['x'], y=settings['y'])

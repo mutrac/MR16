@@ -7,12 +7,19 @@
         "rules" : [
             {   
                 "conditions" : [
-                    ["left_brake", 1],
-                    ["right_brake", 1]
+                    ["pull_mode", 1]
                 ],
-                "description" : "Brakes pressed, don't engage CVT",
+                "description" : "Pull mode engaged",
                 "target" : "TCS",
-                "command" : "C"
+                "command" : "P"
+            },
+            {   
+                "conditions" : [
+                    ["pull_mode", 0]
+                ],
+                "description" : "Manual mode engaged",
+                "target" : "TCS",
+                "command" : "M"
             },
             {   
                 "conditions" : [
@@ -34,9 +41,17 @@
                 "conditions" : [
                     ["cart_mode", 1]
                 ],
-                "description" : "Cart mode pressed",
+                "description" : "Automatic mode engaged",
                 "target" : "VDC",
                 "command" : "M"
+            }
+            {   
+                "conditions" : [
+                    ["cart_mode", 0]
+                ],
+                "description" : "Override mode engaged",
+                "target" : "VDC",
+                "command" : "O"
             }
         ]
     },

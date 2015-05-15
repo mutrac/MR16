@@ -20,7 +20,9 @@
 // CMQ Commands (single letter requires single quotes)
 const char FWD_CMD = 'F'; // move cart forward
 const char BWD_CMD = 'B'; // move cart backward
-const char MOD_CMD = 'M'; // change cart mode
+const char AUTO_CMD = 'A'; // change cart mode to auto
+const char OVERRIDE_CMD = 'O'; // change cart mode to override
+
 
 // USB/CanBUS Info
 const char UID[] = "VDC";
@@ -62,7 +64,7 @@ const int STEERING_SAMPLES = 5;
 
 /* --- GLOBAL VARIABLES --- */
 // Create sensor values
-int CART_MODE = 0;
+int CART_MODE = 0; // start in override mode
 int STR_POS = 0;
 int ACT_POS = 0;
 int SUSP_POS = 0;
@@ -132,13 +134,10 @@ void loop() {
       case BWD_CMD:
         CART_BACKWARD = 1;
         break;
-      case MOD_CMD:
-        if (CART_MODE) {
-          CART_MODE = 0;
-        }
-        else {
-          CART_MODE = 1;
-        }
+      case AUTO_CMD:
+        CART_MODE = 1;
+      case OVERRIDE_CMD:
+        CART_MODE = 0;
         break;
       default:
         break;
@@ -178,7 +177,7 @@ void loop() {
   /* --- END Ballast Subsystem--- */
 
   // Format data buffer
-  sprintf(DATA_BUFFER, "{'str':%d,'act':%d,'cart_mode':%d,'cart_fwd':%d,'cart_bwd':%d,'susp':%d}", STR_POS, ACT_POS, CART_MODE, CART_FORWARD, CART_BACKWARD, SUSP_POS);
+  sprintf(DATA_BUFFER, "{'str':%d,'act':%d,'cart_mode':%d,'susp':%d}", STR_POS, ACT_POS, CART_MODE, SUSP_POS);
 
   // Format output to USB host by the following structure: {uid, data, chksum}
   sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);

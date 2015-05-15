@@ -29,7 +29,7 @@ const int BUTTON_KILL_PIN = 22;
 // Joystick (Digital) 
 const int IGNITION_PIN = 23;
 const int TRIGGER_KILL_PIN = 25;
-const int PULL_PIN = 27;
+const int PULL_MODE_PIN = 27;
 // D29 is a Blocked pin
 const int CART_FORWARD_PIN = 31;
 const int CART_BACKWARD_PIN = 33;
@@ -121,6 +121,7 @@ int HITCH_KILL = 0;
 int TRIGGER_KILL = 0;
 int BUTTON_KILL = 0;
 int IGNITION = 0;
+int PULL_MODE = 0;
 int CVT_GUARD = 0;
 int RUN_MODE = 0;
 int LEFT_BRAKE = 0;
@@ -201,7 +202,7 @@ void setup() {
   // Joystick Digital Input
   pinMode(IGNITION_PIN, INPUT);
   pinMode(TRIGGER_KILL_PIN, INPUT);
-  pinMode(PULL_PIN, INPUT);
+  pinMode(PULL_MODE_PIN, INPUT);
   pinMode(CART_FORWARD_PIN, INPUT);
   pinMode(CART_BACKWARD_PIN, INPUT);
   pinMode(CART_MODE_PIN, INPUT);
@@ -256,7 +257,7 @@ void loop() {
   
   // Check Seat
   SEAT_KILL = check_seat();
-
+  
   // Check Regular Switches (Default to 0 if disconnected)
   TRIGGER_KILL = check_switch(TRIGGER_KILL_PIN);
   IGNITION = check_switch(IGNITION_PIN);
@@ -264,6 +265,7 @@ void loop() {
   CART_FORWARD = check_switch(CART_FORWARD_PIN);
   CART_BACKWARD = check_switch(CART_BACKWARD_PIN);
   CART_MODE = check_switch(CART_MODE_PIN);
+  PULL_MODE = check_switch(PULL_MODE_PIN);
   THROTTLE_UP = check_switch(THROTTLE_UP_PIN);
   THROTTLE_DOWN = check_switch(THROTTLE_DOWN_PIN);
   THROTTLE_HIGH = check_switch(THROTTLE_HIGH_PIN);
@@ -346,11 +348,13 @@ void loop() {
     kill();
   }
 
-  // USB
+  // Format float to string
   dtostrf(LPH, DIGITS, PRECISION, LPH_BUF);
   dtostrf(TEMP, DIGITS, PRECISION, TEMP_BUF);
   dtostrf(PSI, DIGITS, PRECISION, PSI_BUF);
-  sprintf(DATA_BUFFER, "{'run_mode':%d,'display_mode':%d,'right_brake':%d,'left_brake':%d,'cvt_guard':%d,'button':%d,'seat':%d,'hitch':%d,'ignition':%d,'rfid':'%d','cart_mode':%d,'cart_fwd':%d,'cart_bwd':%d','throttle':%d,'trigger':%d}", RUN_MODE, DISPLAY_MODE, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, BUTTON_KILL, SEAT_KILL, HITCH_KILL, IGNITION, RFID_AUTH, CART_MODE, CART_FORWARD, CART_BACKWARD, THROTTLE, TRIGGER_KILL);
+  
+  // Output to USB Serial
+  sprintf(DATA_BUFFER, "{'run_mode':%d,'display_mode':%d,'right_brake':%d,'left_brake':%d,'cvt_guard':%d,'button':%d,'seat':%d,'hitch':%d,'ignition':%d,'rfid':'%d','cart_mode':%d,'cart_fwd':%d,'cart_bwd':%d','throttle':%d,'trigger':%d,'pull_mode':%d}", RUN_MODE, DISPLAY_MODE, RIGHT_BRAKE, LEFT_BRAKE, CVT_GUARD, BUTTON_KILL, SEAT_KILL, HITCH_KILL, IGNITION, RFID_AUTH, CART_MODE, CART_FORWARD, CART_BACKWARD, THROTTLE, TRIGGER_KILL, PULL_MODE);
   sprintf(OUTPUT_BUFFER, "{'uid':'%s','data':%s,'chksum':%d,'task':'%s'}", UID, DATA_BUFFER, checksum(), PUSH);
   Serial.println(OUTPUT_BUFFER);
   Serial.flush();
