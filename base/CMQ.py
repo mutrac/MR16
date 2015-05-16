@@ -59,6 +59,7 @@ class Controller:
                 pretty_print('CMQ', 'Attempting to attach %s on %s' % (self.uid, self.name))
                 self.port = serial.Serial(self.name, self.baud, timeout=self.timeout, writeTimeout=write_timeout)
                 time.sleep(2)
+                self.port.flushInput()
                 for j in range(read_attempts):
                     time.sleep(timeout)
                     string = self.port.readline()
