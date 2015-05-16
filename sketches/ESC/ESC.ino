@@ -68,7 +68,7 @@ const int RIGHT_BRAKE_PIN = A15;
 const char UID[] = "ESC";
 const char PUSH[] = "push";
 const char PULL[] = "pull";
-const int BAUD = 9600;
+const int BAUD = 19200;
 const int OUTPUT_SIZE = 512;
 const int DATA_SIZE = 256;
 

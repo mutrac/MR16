@@ -2,7 +2,7 @@
     {
         "name" : "/dev/ttyACM",
         "uid" : "ESC",
-        "baud" : 9600,
+        "baud" : 19200,
         "timeout" : 0.1,
         "rules" : [
             {   
@@ -58,14 +58,14 @@
     {
         "name" : "/dev/ttyACM",
         "uid" : "TCS",
-        "baud" : 9600,
+        "baud" : 38400,
         "timeout" : 0.1,
         "rules" : []
     },
     {
         "name" : "/dev/ttyACM",
         "uid" : "VDC",
-        "baud" : 9600,
+        "baud" : 19200,
         "timeout" : 0.1,
         "rules" : []
     }

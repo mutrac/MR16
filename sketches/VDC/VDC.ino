@@ -28,7 +28,7 @@ const char OVERRIDE_CMD = 'O'; // change cart mode to override
 const char UID[] = "VDC";
 const char PULL[] = "pull";
 const char PUSH[] = "push";
-const int BAUD = 9600;
+const int BAUD = 19200;
 const int DATA_SIZE = 256;
 const int OUTPUT_SIZE = 512;
 
@@ -125,7 +125,7 @@ void loop() {
   
   /* --- START Ballast Subsystm --- */
   // Get next serial cart control commands
-  if (Serial.available()) {
+  while (Serial.available()) {
     char c = Serial.read();
     switch (c) {
       case FWD_CMD:

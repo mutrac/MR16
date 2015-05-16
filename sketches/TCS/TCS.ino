@@ -27,7 +27,7 @@ const char PULL[] = "pull";
 const char PUSH[] = "push";
 const char PULL_CMD = 'P';
 const char MANUAL_CMD = 'M';
-const int BAUD = 9600;
+const int BAUD = 38400;
 const int DATA_SIZE = 256;
 const int OUTPUT_SIZE = 512;
 const int INTERVAL = 500; // millisecond waits
@@ -258,7 +258,7 @@ void loop() {
   }
 
   // Set CVT Mode from Serial commands
-  if (Serial.available()) {
+  while (Serial.available()) {
     char c = Serial.read();
     switch (c) {
       case PULL_CMD:
