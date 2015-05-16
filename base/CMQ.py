@@ -68,8 +68,6 @@ class Controller:
                             pretty_print('CMQ', 'Read OK, device is %s' % data['uid'])
                             if data['uid'] == self.uid:
                                 pretty_print('CMQ', 'Found matching UID')
-                                self.port.flushInput()
-                                self.port.flushOutput()
                                 return # return the Controller object
                             else:
                                 break
