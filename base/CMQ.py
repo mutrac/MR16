@@ -44,7 +44,7 @@ Controller Class
 This is a USB device which is part of a MIMO system
 """
 class Controller:
-    def __init__(self, uid, name, baud=9600, timeout=0.25, rules=[], port_attempts=3, read_attempts=10, write_timeout=0.5):
+    def __init__(self, uid, name, baud=38400, timeout=0.25, rules=[], port_attempts=3, read_attempts=10, write_timeout=0.5):
         self.name = name
         self.uid = uid # e.g. VDC
         self.baud = baud
