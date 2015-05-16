@@ -14,7 +14,6 @@ import cv2, cv
 import numpy as np
 import time
 import sys
-from matplotlib import pyplot as plt
 from itertools import cycle
 import zmq
 import json
