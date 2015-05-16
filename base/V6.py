@@ -18,7 +18,6 @@ from itertools import cycle
 import zmq
 import json
 from datetime import datetime
-import gps as gpsd
 
 # Useful Functions 
 def pretty_print(task, msg):
