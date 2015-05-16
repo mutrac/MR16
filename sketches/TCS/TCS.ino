@@ -192,7 +192,9 @@ void loop() {
   DRIVESHAFT_PULSES = 0;
   WHEEL_PULSES = 0;
 
+  
   // Wait and get volatile values
+  delay(INTERVAL);
   TIME = millis();
   
   // Drive Shaft RPM
@@ -258,7 +260,7 @@ void loop() {
   }
 
   // Set CVT Mode from Serial commands
-  while (Serial.available()) {
+  while (Serial.available() > 0) {
     char c = Serial.read();
     switch (c) {
       case PULL_CMD:

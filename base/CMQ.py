@@ -176,7 +176,7 @@ class CMQ:
             try:
                 target_dev = self.controllers[target]
             except Exception as e:
-                return self.generate_event('CMQ', 'error', '%s does not exist' % dev.uid)
+                return self.generate_event('CMQ', 'error', '%s does not exist!' % target)
             for [key,val] in r['conditions']:
                 if (data[key] == val): # TODO: might have to handle Unicode
                     try:

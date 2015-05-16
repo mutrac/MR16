@@ -125,7 +125,7 @@ void loop() {
   
   /* --- START Ballast Subsystm --- */
   // Get next serial cart control commands
-  while (Serial.available()) {
+  while (Serial.available() > 0) {
     char c = Serial.read();
     switch (c) {
       case FWD_CMD:
