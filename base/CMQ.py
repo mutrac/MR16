@@ -180,7 +180,7 @@ class CMQ:
             for [key,val] in r['conditions']:
                 if (data[key] == val): # TODO: might have to handle Unicode
                     try:
-                        target_dev.port.flushInput()
+                        target_dev.port.flushOutput()
                         pretty_print('CMQ', 'Routing %s command to %s ...' % (str(cmd), str(target)))
                         target_dev.port.write(cmd)
                         pretty_print('CMQ', '... Done' % (str(cmd), str(target)))
