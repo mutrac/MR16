@@ -182,9 +182,9 @@ class CMQ:
             for [key,val] in r['conditions']:
                 if (data[key] == val): # TODO: might have to handle Unicode
                     try:
+                        target_dev.port.flushInput()
                         pretty_print('CMQ', 'Routing %s command to %s' % (str(cmd), str(target)))
                         target_dev.port.write(cmd)
-                        
                     except Exception as e:
                         pretty_print('CMQ', '%s (%s) -- Write failed: %s' % (dev.uid, dev.name, str(e)))
                         pretty_print('CMQ', 'ERROR: Failed to follow rule -- %s' % desc)
