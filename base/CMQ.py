@@ -144,18 +144,20 @@ class CMQ:
     def listen(self, dev):
     
         ## Read and parse
-        pretty_print('CMQ', 'Listening for %s (%s)' % (dev.uid, dev.name))
+        pretty_print('CMQ', '%s (%s) -- Listening' % (dev.uid, dev.name))
         try:
             dump = dev.port.readline()
             event = ast.literal_eval(dump)
             if not self.checksum(event):  #! TODO: check sum here?
                 return self.generate_event('CMQ', 'error', '%s failed checksum' % dev.name)
-            pretty_print('CMQ', 'Read from %s (%s)' % (dev.uid, dev.name))
+            pretty_print('CMQ', '%s (%s) -- OKAY' % (dev.uid, dev.name))
         except SyntaxError as e:
-            return self.generate_event('CMQ', 'error', 'Parse failed on %s (%s)' % (dev.uid, dev.name))
+            return self.generate_event('CMQ', 'error', '%s (%s) -- Parse Failed' % (dev.uid, dev.name))
+            pretty_print('CMQ', '%s (%s) -- Flushing input buffer' % (dev.uid, dev.name))
+            dev.port.flushInput()
         except Exception as e:
-            return self.generate_event('CMQ', 'error', 'NO DATA from %s (%s)' % (dev.uid, dev.name))
-        
+            return self.generate_event('CMQ', 'error', '%s (%s) -- NO DATA' % (dev.uid, dev.name))
+            
         ## Follow rule-base
         data = event['data']
         for r in dev.rules:
@@ -180,7 +182,9 @@ class CMQ:
                     try:
                         pretty_print('CMQ', 'Routing %s command to %s' % (str(cmd), str(target)))
                         target_dev.port.write(cmd)
+                        
                     except Exception as e:
+                        pretty_print('CMQ', '%s (%s) -- Write failed: %s' % (dev.uid, dev.name, str(e)))
                         pretty_print('CMQ', 'ERROR: Failed to follow rule -- %s' % desc)
         return event
         
