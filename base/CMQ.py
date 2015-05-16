@@ -147,7 +147,6 @@ class CMQ:
         pretty_print('CMQ', '%s (%s) -- Listening' % (dev.uid, dev.name))
         try:
             dump = dev.port.readline()
-            print dump
             event = ast.literal_eval(dump)
             if not self.checksum(event):  #! TODO: check sum here?
                 return self.generate_event('CMQ', 'error', '%s (%s) -- Checksum Failed' % (dev.uid, dev.name))
@@ -176,7 +175,7 @@ class CMQ:
             try:
                 target_dev = self.controllers[target]
             except Exception as e:
-                return self.generate_event('CMQ', 'error', '%s does not exist!' % target)
+                pretty_print('CMQ', 'ERROR: %s does not exist!' % target)
             for [key,val] in r['conditions']:
                 if (data[key] == val): # TODO: might have to handle Unicode
                     try:

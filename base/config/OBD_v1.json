@@ -10,6 +10,7 @@
     "CMQ_SERVER" : "tcp://*:1980",
     "CMQ_FREQ" : 0.001,
     "USERS" : {
-        "1" : "Trevor Stanhope"
+        "623" : "Stephen McGuire",
+        "633" : "Trevor Stanhope"
     }
 }
