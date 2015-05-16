@@ -150,12 +150,11 @@ class CMQ:
             dump = dev.port.readline()
             event = ast.literal_eval(dump)
             if not self.checksum(event):  #! TODO: check sum here?
-                return self.generate_event('CMQ', 'error', '%s failed checksum' % dev.name)
+                return self.generate_event('CMQ', 'error', '%s (%s) failed checksum' % (dev.uid, dev.name))
             pretty_print('CMQ', '%s (%s) -- OKAY' % (dev.uid, dev.name))
         except SyntaxError as e:
             return self.generate_event('CMQ', 'error', '%s (%s) -- Parse Failed' % (dev.uid, dev.name))
             pretty_print('CMQ', '%s (%s) -- Flushing input buffer' % (dev.uid, dev.name))
-            dev.port.flushInput()
         except Exception as e:
             return self.generate_event('CMQ', 'error', '%s (%s) -- NO DATA' % (dev.uid, dev.name))
             
