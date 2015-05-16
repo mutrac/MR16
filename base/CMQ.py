@@ -184,6 +184,7 @@ class CMQ:
                         target_dev.port.write(str(cmd))
                         pretty_print('CMQ', '... Done' % (str(cmd), str(target)))
                     except Exception as e:
+                        print str(e)
                         pretty_print('CMQ', 'ERROR: Failed to follow rule -- %s' % desc)
         return event
         
