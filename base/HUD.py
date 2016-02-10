@@ -25,6 +25,7 @@ class SafeMode:
         
     def __init__(self, config, addr="tcp://127.0.0.1:1980", timeout=0.1):
         pretty_print('HUD', 'Setting Layout')
+        self.config = config
         self.addr = addr
         self.timeout = timeout
         self.zmq_context = zmq.Context()
@@ -103,12 +104,16 @@ class SafeMode:
                     data = event['data'] #! the event determines which labels are changed
                     #!TODO Add handler for changing the display mode (i.e. from the ESC 'display_mode' key-val)
                     for name in data.keys():
+                        label_val = data[name]
                         try:
-                            label_val = data[name]
-                            if not np.isnan(label_val):
-                                label_txt = self.label_formats[name] % str(label_val)
-                                self.labels[name].set(label_txt)
-                                self.master.update_idletasks()
+                            mappings = self.config['labels'][name]['mappings'] # see if mappings are defined for this label
+                            label_val = mappings[str(label_val)] # map raw value to pretty output      
+			except:
+                            pass
+                        try:
+                            label_txt = self.label_formats[name] % str(label_val)
+                            self.labels[name].set(label_txt)
+                            self.master.update_idletasks()
                         except KeyError as error:
                             pretty_print('HUD', 'ERROR: label %s does not exist' % name)
                 else:
@@ -120,7 +125,7 @@ class SafeMode:
             pretty_print('HUD', 'ERROR: %s' % str(error))
 
 if __name__ == '__main__':
-    with open('config/HUD_debug.json', 'r') as jsonfile:
+    with open('config/HUD_basic.json', 'r') as jsonfile:
         config = json.loads(jsonfile.read()) # Load settings file
     display = SafeMode(config)
     while True:

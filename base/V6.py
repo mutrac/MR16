@@ -38,7 +38,7 @@ class V6:
         hessian : iterations of hessian filter
         frame
     """
-    def __init__(self, capture=0, fov=0.75, f=6, aspect=1.33, d=1000, roll=0, pitch=0, yaw=0, hessian=1000, w=640, h=480, neighbors=2, factor=0.7):
+    def __init__(self, capture=0, fov=0.75, f=6, aspect=1.33, d=241, roll=0, pitch=0, yaw=0, hessian=1000, w=640, h=480, neighbors=2, factor=0.7):
         
         # Things which should be set once
         try:
@@ -416,5 +416,6 @@ if __name__ == '__main__':
     try:
         ext = V6(capture=0)
         ext.run_async(dt=1/25.0)
-    except Exception:
+    except Exception as e:
+	print str(e)
         ext.close()
